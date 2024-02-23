@@ -13,8 +13,10 @@ Web Cat is a Python-based API designed to facilitate the integration of website 
 
 ### Running the API
 
-1. To start the Flask server locally: 
-    a. `cd app
+1. To start the Flask server locally:
+   
+    a. `cd app`
+
     b. `python3 app.py`
 
 ## Examples
