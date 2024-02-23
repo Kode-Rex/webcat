@@ -1,0 +1,13 @@
+[Unit]
+Description=WebCat
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/aibuddy-webcat/app.py
+WorkingDirectory=/opt/aibuddy-webcat
+Restart=always
+User=webcat # you will need to `useradd webcat` if not already present
+Group=webcat
+
+[Install]
+WantedBy=multi-user.target
