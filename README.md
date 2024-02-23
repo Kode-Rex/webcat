@@ -24,4 +24,4 @@ Here's a quick example of how to use the API:
 
 Calling ping to check that the service is up:
 
-`curl -X GET -H "Content-Type: application/json" http://localhost:5000/ping`
+`curl -X GET -H "Content-Type: application/json" http://localhost:4000/ping`
