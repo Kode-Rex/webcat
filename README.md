@@ -2,7 +2,9 @@
 
 ## Introduction
 
-Web Cat is a Python-based API designed to facilitate the integration of website content with chat applications through a custom GPT model. This innovative API parses website content, processes it through a GPT model for contextual understanding and response generation, and then seamlessly integrates these insights into your chat application, enhancing the user experience with dynamic, context-aware interactions.
+Web Cat is a Python-based API designed to facilitate the integration of website content with ChatGPT via a custom GPT. The parses a website's content and then seamlessly integrates these insights into your chat, enhancing the user experience with dynamic, context-aware interactions.
+
+I find it very useful when I am ideating on a concept and I want to pull in additional info without just a copy and paste of the contents into the chat. 
 
 ## Getting Started
 
