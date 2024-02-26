@@ -27,4 +27,4 @@ Here's a quick example of how to use the API:
 
 Calling ping to check that the service is up:
 
-`curl -X GET -H "Content-Type: application/json" http://localhost:4000/ping`
+`curl -X POST -H "Content-Type: application/json" -d '{"url": "https://www.iana.org/help/example-domains", "output_format": "TEXT"}' http://localhost:4000/scrape`
