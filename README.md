@@ -2,29 +2,43 @@
 
 ## Introduction
 
-Web Cat is a Python-based API designed to facilitate the integration of website content with ChatGPT via a custom GPT. The parses a website's content and then seamlessly integrates these insights into your chat, enhancing the user experience with dynamic, context-aware interactions.
+Web Cat is a serverless Python-based API hosted on Azure Functions, designed to scrape and process website content responsibly. Leveraging the readability library and BeautifulSoup, Web Cat extracts the main body of text from web pages, making it easy to integrate website content ChatGPT through the use of Custom GPTs. This API respects robots.txt rules to ensure ethical web scraping practices.
 
-I find it very useful when I am ideating on a concept and I want to pull in additional info without just a copy and paste of the contents into the chat. 
+Using the `@Web Cat` GPT enhances ideation by seamlessly integrating web content into conversations, eliminating the need for manual copy-pasting.
+
+## Features
+ - **Ethical Web Scraping**: Checks robots.txt to ensure scraping is allowed.
+ - **Content Extraction**: Utilizes the readability library for clean text extraction.
+ - **Text Processing**: Further processes extracted content for improved usability.
 
 ## Getting Started
 
 ### Prerequisites
 
+- Azure Functions Core Tools
 - Python 3.8 or later
-- Flask
+- An Azure account and subscription
 
-### Running the API
+## Local Development
 
-1. To start the Flask server locally:
-   
-    a. `cd app`
+Prepare your local environment by running:
 
-    b. `python3 app.py`
+```bash
+cd src
+pip install -r requirements.txt
+func start
+```
 
-## Examples
+## Limitations and Considerations
+- **Adherence to `robots.txt`**: This API will not scrape content from URLs disallowed by their robots.txt.
+- **Text-Based Content**: The API is optimized for text content and may not accurately represent multimedia or dynamic web content.
 
-Here's a quick example of how to use the API:
+## Usage
 
-Calling ping to check that the service is up:
+Here's a quick example of how to test the API locally:
 
-`curl -X POST -H "Content-Type: application/json" -d '{"url": "https://www.iana.org/help/example-domains", "output_format": "TEXT"}' http://localhost:4000/scrape`
+```bash
+cd src
+func start
+curl -X POST http://localhost:7071/api/scrape -H "Content-Type: application/json" -d "{\"url\":\"https://example.com\"}"
+```
