@@ -32,7 +32,7 @@ jobs:
 
       # Optional: Add step to run tests here
 
-     - name: Zip artifact for deployment
+      - name: Zip artifact for deployment
         run: |
           cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           zip -r ../release.zip ./*
