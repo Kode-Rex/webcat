@@ -7,6 +7,7 @@ import random
 from urllib.robotparser import RobotFileParser
 
 from datetime import datetime
+from bs4 import BeautifulSoup 
 
 app = Flask(__name__)
 
@@ -51,7 +52,9 @@ def scrape():
     try:
         response = requests.get(url, headers=headers)
         doc = Document(response.content)
-        content = doc.summary(html_partial=True)
+        summary_html = doc.summary(html_partial=True)
+        soup = BeautifulSoup(summary_html, 'html.parser')  # Parse the HTML
+        content = soup.get_text(separator='\n')  # Extract text
     except Exception as e:
         error_message = f"Error: Failed to scrape the URL - {str(e)}"
         if output_format == 'JSON':
