@@ -32,8 +32,10 @@ jobs:
 
       # Optional: Add step to run tests here
 
-      - name: Zip artifact for deployment
-        run: zip -r release.zip src/* -x "src/venv/*"
+     - name: Zip artifact for deployment
+        run: |
+          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          zip -r ../release.zip ./*
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
@@ -62,7 +64,7 @@ jobs:
         with:
           app-name: 'webcatgpt'
           slot-name: 'Production'
-          package: './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}' # Adjusted to deploy the content of src directly
+          package: './release.zip' # Adjusted to deploy the content of src directly
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A0CFD2E02C29451F9ABF27C189B5721B }}
           scm-do-build-during-deployment: true
           enable-oryx-build: true
