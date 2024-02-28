@@ -19,13 +19,25 @@ def can_fetch(url):
     url_root = f'{parsed_url.scheme}://{parsed_url.netloc}/'
     robots_url = f'{url_root}robots.txt'
     rp = RobotFileParser()
-    rp.set_url(robots_url)
-    rp.read()
-    return rp.can_fetch(USER_AGENTS[0], url)
+
+    try:
+
+        response = requests.get(robots_url)
+        if response.status_code == 200:
+            rp.set_url(robots_url)
+            rp.read()
+            return rp.can_fetch("*", url)
+        else:
+            return True
+    except Exception as e:
+        logging.error("Exception in can_fetch: " + str(e))
+        return f'Error fetching robots.txt: {e}'
 
 @app.route(route="scrape", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def scrape(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
+
+
 
     try:
         data = req.get_json()
