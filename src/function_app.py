@@ -21,7 +21,6 @@ def can_fetch(url):
     rp = RobotFileParser()
 
     try:
-
         response = requests.get(robots_url)
         if response.status_code == 200:
             rp.set_url(robots_url)
@@ -36,17 +35,16 @@ def can_fetch(url):
 @app.route(route="scrape", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def scrape(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
-
-
-
+    
     try:
         data = req.get_json()
         url = data.get('url')
+        respect_robots_txt = data.get('respect_robots_txt', True)  # Default to True if not specified
         
         if not url:
             return func.HttpResponse("Error: Missing URL", status_code=400)
         
-        if not can_fetch(url):
+        if respect_robots_txt and not can_fetch(url):
             return func.HttpResponse("Error: Access denied by robots.txt", status_code=403)
         
         headers = {'User-Agent': random.choice(USER_AGENTS)}
