@@ -16,24 +16,6 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
 ]
 
-def can_fetch(url):
-    parsed_url = urlparse(url)
-    url_root = f'{parsed_url.scheme}://{parsed_url.netloc}/'
-    robots_url = f'{url_root}robots.txt'
-    rp = RobotFileParser()
-
-    try:
-        response = requests.get(robots_url)
-        if response.status_code == 200:
-            rp.set_url(robots_url)
-            rp.read()
-            return rp.can_fetch("*", url)
-        else:
-            return True
-    except Exception as e:
-        logging.error("Exception in can_fetch: " + str(e))
-        return f'Error fetching robots.txt: {e}'
-
 @app.route(route="scrape", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def scrape(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
@@ -41,13 +23,9 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
     try:
         data = req.get_json()
         url = data.get('url')
-        respect_robots_txt = data.get('respect_robots_txt', True)  # Default to True if not specified
         
         if not url:
             return func.HttpResponse("Error: Missing URL", status_code=400)
-        
-        if respect_robots_txt and not can_fetch(url):
-            return func.HttpResponse("Error: Access denied by robots.txt", status_code=403)
         
         headers = {'User-Agent': random.choice(USER_AGENTS)}
         response = requests.get(url, headers=headers)
