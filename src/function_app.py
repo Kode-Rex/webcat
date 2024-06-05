@@ -68,7 +68,7 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
             elif element.name == 'img':
                 img_url = element.get('src')
                 if img_url and img_url.startswith(('http://', 'https://')):
-                    content += f'\n[Image: {img_url}]\n'
+                    content += f'\n{img_url}\n'
         
         content = content.strip()
         
