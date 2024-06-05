@@ -18,7 +18,7 @@ USER_AGENTS = [
 
 @app.route(route="scrape", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def scrape(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
+    
     
     try:
         data = req.get_json()
@@ -26,6 +26,8 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
         
         if not url:
             return func.HttpResponse("Error: Missing URL", status_code=400)
+        
+        logging.info(f'scrape [{url}]')
         
         headers = {'User-Agent': random.choice(USER_AGENTS)}
         response = requests.get(url, headers=headers)
@@ -35,6 +37,43 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
         content = soup.get_text(separator='\n').strip()  # Added strip() here
         
         return func.HttpResponse(content, mimetype="text/plain")
+    except Exception as e:
+        logging.error(f"Error: {str(e)}")
+        return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+
+
+@app.route(route="scrape_with_images", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def scrape(req: func.HttpRequest) -> func.HttpResponse:
+
+    try:
+        data = req.get_json()
+        url = data.get('url')
+        
+        if not url:
+            return func.HttpResponse("Error: Missing URL", status_code=400)
+        
+        logging.info(f'scraping_with_images [{url}]')
+        
+        headers = {'User-Agent': random.choice(USER_AGENTS)}
+        response = requests.get(url, headers=headers)
+        doc = Document(response.content)
+        summary_html = doc.summary(html_partial=True)
+        soup = BeautifulSoup(summary_html, 'html.parser')
+        content = soup.get_text(separator='\n').strip()  
+
+        # Extract images
+        images = []
+        for img in soup.find_all('img'):
+            img_url = img.get('src')
+            if img_url and img_url.startswith(('http://', 'https://')):
+                images.append(img_url)
+        
+        response_data = {
+            "content": content,
+            "images": images
+        }
+        
+        return func.HttpResponse(json.dumps(response_data), mimetype="application/json")
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
