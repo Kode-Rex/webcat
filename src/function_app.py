@@ -1,3 +1,4 @@
+import json
 import azure.functions as func
 import logging
 from readability.readability import Document
