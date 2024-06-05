@@ -43,7 +43,7 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="scrape_with_images", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
-def scrape(req: func.HttpRequest) -> func.HttpResponse:
+def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         data = req.get_json()
