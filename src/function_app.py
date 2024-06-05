@@ -45,7 +45,6 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="scrape_with_images", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
-
     try:
         data = req.get_json()
         url = data.get('url')
@@ -60,18 +59,21 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
         doc = Document(response.content)
         summary_html = doc.summary(html_partial=True)
         soup = BeautifulSoup(summary_html, 'html.parser')
-        content = soup.get_text(separator='\n').strip()  
-
-        # Extract images
-        images = []
-        for img in soup.find_all('img'):
-            img_url = img.get('src')
-            if img_url and img_url.startswith(('http://', 'https://')):
-                images.append(img_url)
+        
+        # Extract text and images
+        content = ''
+        for element in soup.descendants:
+            if isinstance(element, str):
+                content += element.strip() + '\n'
+            elif element.name == 'img':
+                img_url = element.get('src')
+                if img_url and img_url.startswith(('http://', 'https://')):
+                    content += f'\n[Image: {img_url}]\n'
+        
+        content = content.strip()
         
         response_data = {
-            "content": content,
-            "images": images
+            "content": content
         }
         
         return func.HttpResponse(json.dumps(response_data), mimetype="application/json")
