@@ -7,7 +7,6 @@ Web Cat is a serverless Python-based API hosted on Azure Functions, designed to 
 Using the `@Web Cat` GPT enhances ideation by seamlessly integrating web content into conversations, eliminating the need for manual copy-pasting.
 
 ## Features
- - **Ethical Web Scraping**: Checks robots.txt to ensure scraping is allowed.
  - **Content Extraction**: Utilizes the readability library for clean text extraction.
  - **Text Processing**: Further processes extracted content for improved usability.
 
@@ -30,7 +29,6 @@ func start
 ```
 
 ## Limitations and Considerations
-- **Adherence to `robots.txt`**: This API will not scrape content from URLs disallowed by their robots.txt.
 - **Text-Based Content**: The API is optimized for text content and may not accurately represent multimedia or dynamic web content.
 
 ## Usage
