@@ -7,6 +7,14 @@ from bs4 import BeautifulSoup
 import random
 import time
 from urllib.parse import urlparse
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# In-memory API key (fallback if environment variable is not set)
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
 
 app = func.FunctionApp()
 
@@ -100,3 +108,104 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+
+@app.route(route="set_api_key", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def set_api_key(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        global SERPER_API_KEY
+        data = req.get_json()
+        api_key = data.get('api_key')
+        
+        if not api_key:
+            return func.HttpResponse("Error: Missing API key", status_code=400)
+            
+        # Set the API key in memory
+        SERPER_API_KEY = api_key
+        
+        return func.HttpResponse("API key set successfully", status_code=200)
+    except Exception as e:
+        logging.error(f"Error setting API key: {str(e)}")
+        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+
+@app.route(route="search", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def search(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        global SERPER_API_KEY
+        data = req.get_json()
+        query = data.get('query')
+        
+        # Use the in-memory API key, or allow overriding with a request parameter
+        api_key = data.get('api_key') or SERPER_API_KEY
+        
+        if not query:
+            return func.HttpResponse("Error: Missing search query", status_code=400)
+        
+        if not api_key:
+            return func.HttpResponse("Error: Serper API key not configured. Please use the /api/set_api_key endpoint first.", status_code=400)
+            
+        logging.info(f'search [{query}]')
+        
+        # Call Serper.dev API to get search results
+        serper_url = "https://google.serper.dev/search"
+        headers = {
+            'X-API-KEY': api_key,
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'q': query,
+            'gl': 'us',
+            'hl': 'en'
+        }
+        
+        response = requests.post(serper_url, headers=headers, json=payload)
+        search_results = response.json()
+        
+        # Extract top 3 organic results
+        if 'organic' not in search_results or not search_results['organic']:
+            return func.HttpResponse("No search results found", status_code=404)
+            
+        top_results = search_results['organic'][:3]
+        results_with_content = []
+        
+        user_agent = random.choice(USER_AGENTS)
+        headers = {'User-Agent': user_agent}
+        
+        # Scrape content for each result
+        for result in top_results:
+            url = result.get('link')
+            if not url:
+                continue
+                
+            try:
+                # Use the existing scrape functionality
+                soup = try_fetch_with_backoff(url, headers)
+                content = soup.get_text(separator='\n').strip()
+                
+                results_with_content.append({
+                    'title': result.get('title'),
+                    'url': url,
+                    'snippet': result.get('snippet'),
+                    'content': content
+                })
+            except Exception as e:
+                logging.error(f"Failed to scrape {url}: {str(e)}")
+                results_with_content.append({
+                    'title': result.get('title'),
+                    'url': url,
+                    'snippet': result.get('snippet'),
+                    'content': f"Error: Failed to scrape content - {str(e)}"
+                })
+        
+        # Include the query and result count in the response
+        return func.HttpResponse(
+            json.dumps({
+                "query": query,
+                "result_count": len(results_with_content),
+                "results": results_with_content
+            }),
+            mimetype="application/json"
+        )
+        
+    except Exception as e:
+        logging.error(f"Search error: {str(e)}")
+        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
