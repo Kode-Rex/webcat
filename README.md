@@ -41,3 +41,17 @@ func start
 curl -X POST http://localhost:7071/api/scrape -H "Content-Type: application/json" -d "{\"url\":\"https://example.com\"}" # text only
 curl -X POST http://localhost:7071/api/scrape_with_images -H "Content-Type: application/json" -d "{\"url\":\"https://bigmedium.com/speaking/sentient-design-josh-clark-talk.html\"}" #text and images
 ```
+
+## TODO
+
+### Search API Integration
+
+- [ ] Integrate with [Serper.dev](https://serper.dev/) search API to provide search functionality
+- [ ] Develop a search endpoint that:
+  - Fetches search results using Serper API
+  - Processes and filters results for relevance
+  - Automatically scrapes top relevant pages
+  - Returns a combined response with search results and page content
+- [ ] Create appropriate rate limiting and caching strategies
+- [ ] Add authentication for search functionality
+- [ ] Update documentation with search API usage examples
