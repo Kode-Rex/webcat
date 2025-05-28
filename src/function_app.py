@@ -53,14 +53,8 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
         try:
             soup = try_fetch_with_backoff(url, headers)
         except Exception as e:
-            logging.error(f"Initial requests failed: {str(e)}")
-            proxy_url = f"https://12ft.io/{url}"
-            logging.info(f"Retrying with proxy: {proxy_url}")
-            try:
-                soup = try_fetch_with_backoff(proxy_url, headers)
-            except Exception as e:
-                logging.error(f"Proxy requests failed: {str(e)}")
-                return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+            logging.error(f"Requests failed: {str(e)}")
+            return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
         content = soup.get_text(separator='\n').strip()
 
@@ -84,14 +78,8 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
         try:
             soup = try_fetch_with_backoff(url, headers)
         except Exception as e:
-            logging.error(f"Initial requests failed: {str(e)}")
-            proxy_url = f"https://12ft.io/{url}"
-            logging.info(f"Retrying with proxy: {proxy_url}")
-            try:
-                soup = try_fetch_with_backoff(proxy_url, headers)
-            except Exception as e:
-                logging.error(f"Proxy requests failed: {str(e)}")
-                return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+            logging.error(f"Requests failed: {str(e)}")
+            return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
         content = ''
         for element in soup.descendants:
