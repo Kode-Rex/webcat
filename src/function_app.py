@@ -33,6 +33,16 @@ def fetch_content(url, headers):
     soup = BeautifulSoup(summary_html, 'html.parser')
     return soup
 
+def clean_text(text):
+    """Clean scraped text by normalizing whitespace and newlines"""
+    if not text:
+        return ""
+    # Replace multiple newlines with a single newline
+    text = '\n'.join(line.strip() for line in text.splitlines() if line.strip())
+    # Replace multiple spaces with a single space
+    text = ' '.join(text.split())
+    return text
+
 def try_fetch_with_backoff(url, headers, attempts=3, backoff_factor=2):
     for attempt in range(attempts):
         try:
@@ -64,7 +74,8 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
             logging.error(f"Requests failed: {str(e)}")
             return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
-        content = soup.get_text(separator='\n').strip()
+        raw_content = soup.get_text(separator=' ').strip()
+        content = clean_text(raw_content)
 
         return func.HttpResponse(content, mimetype="text/plain")
     except Exception as e:
@@ -89,22 +100,34 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
             logging.error(f"Requests failed: {str(e)}")
             return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
-        content = ''
+        text_parts = []
+        images = []
+        
+        # Extract text and images separately
         for element in soup.descendants:
-            if isinstance(element, str):
-                content += element.strip() + '\n'
+            if isinstance(element, str) and element.strip():
+                text_parts.append(element.strip())
             elif element.name == 'img':
                 img_url = element.get('src')
                 if img_url and img_url.startswith(('http://', 'https://')):
-                    content += f'\n{img_url}\n'
-
-        content = content.strip()
+                    images.append(img_url)
+        
+        # Clean and join text
+        text_content = clean_text(' '.join(text_parts))
+        
+        # Add images after the text
+        content = text_content
+        for img_url in images:
+            content += f'\n\n{img_url}'
 
         response_data = {
             "content": content
         }
 
-        return func.HttpResponse(json.dumps(response_data), mimetype="application/json")
+        return func.HttpResponse(
+            json.dumps(response_data, ensure_ascii=False),
+            mimetype="application/json"
+        )
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
@@ -179,7 +202,10 @@ def search(req: func.HttpRequest) -> func.HttpResponse:
             try:
                 # Use the existing scrape functionality
                 soup = try_fetch_with_backoff(url, headers)
-                content = soup.get_text(separator='\n').strip()
+                # Get text with space separator to avoid literal \n characters
+                raw_content = soup.get_text(separator=' ').strip()
+                # Clean and format the content
+                content = clean_text(raw_content)
                 
                 results_with_content.append({
                     'title': result.get('title'),
@@ -202,7 +228,7 @@ def search(req: func.HttpRequest) -> func.HttpResponse:
                 "query": query,
                 "result_count": len(results_with_content),
                 "results": results_with_content
-            }),
+            }, ensure_ascii=False),
             mimetype="application/json"
         )
         
