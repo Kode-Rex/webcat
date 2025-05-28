@@ -10,6 +10,8 @@
 - [x] Create search endpoint using Serper.dev API
 - [x] Add API key management functionality
 - [x] Add result count in search response
+- [x] Integrate with Serper.dev search API to provide search functionality
+- [x] Develop a search endpoint that fetches and processes search results
 
 ## Todo
 - [ ] Add error handling for different HTTP status codes from source websites
@@ -19,4 +21,7 @@
 - [ ] Add tests for each function
 - [ ] Implement logging improvements for better debugging
 - [ ] Add configuration options for search parameters (country, language)
-- [ ] Create a frontend interface for the API 
+- [ ] Create a frontend interface for the API
+- [ ] Create appropriate rate limiting and caching strategies for search API
+- [ ] Add authentication for search functionality
+- [ ] Update documentation with search API usage examples 
