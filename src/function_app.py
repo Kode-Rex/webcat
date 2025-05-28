@@ -1,7 +1,7 @@
 import json
 import azure.functions as func
 import logging
-from readability.readability import Document
+from readability import Document
 import requests
 from bs4 import BeautifulSoup
 import random
@@ -19,7 +19,8 @@ USER_AGENTS = [
 
 def fetch_content(url, headers):
     response = requests.get(url, headers=headers)
-    doc = Document(response.content)
+    html_content = response.content.decode(response.encoding or 'utf-8')
+    doc = Document(html_content)
     summary_html = doc.summary(html_partial=True)
     soup = BeautifulSoup(summary_html, 'html.parser')
     return soup
