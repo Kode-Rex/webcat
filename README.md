@@ -9,6 +9,7 @@ Using the `@Web Cat` GPT enhances ideation by seamlessly integrating web content
 ## Features
  - **Content Extraction**: Utilizes the readability library for clean text extraction.
  - **Text Processing**: Further processes extracted content for improved usability.
+ - **Search Functionality**: Integrates with Serper.dev to provide web search capabilities.
 
 ## Getting Started
 
@@ -40,4 +41,6 @@ cd src
 func start
 curl -X POST http://localhost:7071/api/scrape -H "Content-Type: application/json" -d "{\"url\":\"https://example.com\"}" # text only
 curl -X POST http://localhost:7071/api/scrape_with_images -H "Content-Type: application/json" -d "{\"url\":\"https://bigmedium.com/speaking/sentient-design-josh-clark-talk.html\"}" #text and images
+curl -X POST http://localhost:7071/api/set_api_key -H "Content-Type: application/json" -d "{\"api_key\":\"your_serper_api_key\"}" # set Serper API key
+curl -X POST http://localhost:7071/api/search -H "Content-Type: application/json" -d "{\"query\":\"your search query\"}" # search and get content
 ```
