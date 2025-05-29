@@ -1,12 +1,20 @@
 import json
 import azure.functions as func
 import logging
-from readability.readability import Document
+from readability import Document
 import requests
 from bs4 import BeautifulSoup
 import random
 import time
 from urllib.parse import urlparse
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# In-memory API key (fallback if environment variable is not set)
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
 
 app = func.FunctionApp()
 
@@ -19,10 +27,21 @@ USER_AGENTS = [
 
 def fetch_content(url, headers):
     response = requests.get(url, headers=headers)
-    doc = Document(response.content)
+    html_content = response.content.decode(response.encoding or 'utf-8')
+    doc = Document(html_content)
     summary_html = doc.summary(html_partial=True)
     soup = BeautifulSoup(summary_html, 'html.parser')
     return soup
+
+def clean_text(text):
+    """Clean scraped text by normalizing whitespace and newlines"""
+    if not text:
+        return ""
+    # Replace multiple newlines with a single newline
+    text = '\n'.join(line.strip() for line in text.splitlines() if line.strip())
+    # Replace multiple spaces with a single space
+    text = ' '.join(text.split())
+    return text
 
 def try_fetch_with_backoff(url, headers, attempts=3, backoff_factor=2):
     for attempt in range(attempts):
@@ -52,16 +71,11 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
         try:
             soup = try_fetch_with_backoff(url, headers)
         except Exception as e:
-            logging.error(f"Initial requests failed: {str(e)}")
-            proxy_url = f"https://12ft.io/{url}"
-            logging.info(f"Retrying with proxy: {proxy_url}")
-            try:
-                soup = try_fetch_with_backoff(proxy_url, headers)
-            except Exception as e:
-                logging.error(f"Proxy requests failed: {str(e)}")
-                return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+            logging.error(f"Requests failed: {str(e)}")
+            return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
-        content = soup.get_text(separator='\n').strip()
+        raw_content = soup.get_text(separator=' ').strip()
+        content = clean_text(raw_content)
 
         return func.HttpResponse(content, mimetype="text/plain")
     except Exception as e:
@@ -83,31 +97,141 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
         try:
             soup = try_fetch_with_backoff(url, headers)
         except Exception as e:
-            logging.error(f"Initial requests failed: {str(e)}")
-            proxy_url = f"https://12ft.io/{url}"
-            logging.info(f"Retrying with proxy: {proxy_url}")
-            try:
-                soup = try_fetch_with_backoff(proxy_url, headers)
-            except Exception as e:
-                logging.error(f"Proxy requests failed: {str(e)}")
-                return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+            logging.error(f"Requests failed: {str(e)}")
+            return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
-        content = ''
+        text_parts = []
+        images = []
+        
+        # Extract text and images separately
         for element in soup.descendants:
-            if isinstance(element, str):
-                content += element.strip() + '\n'
+            if isinstance(element, str) and element.strip():
+                text_parts.append(element.strip())
             elif element.name == 'img':
                 img_url = element.get('src')
                 if img_url and img_url.startswith(('http://', 'https://')):
-                    content += f'\n{img_url}\n'
-
-        content = content.strip()
+                    images.append(img_url)
+        
+        # Clean and join text
+        text_content = clean_text(' '.join(text_parts))
+        
+        # Add images after the text
+        content = text_content
+        for img_url in images:
+            content += f'\n\n{img_url}'
 
         response_data = {
             "content": content
         }
 
-        return func.HttpResponse(json.dumps(response_data), mimetype="application/json")
+        return func.HttpResponse(
+            json.dumps(response_data, ensure_ascii=False),
+            mimetype="application/json"
+        )
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
+
+@app.route(route="set_api_key", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def set_api_key(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        global SERPER_API_KEY
+        data = req.get_json()
+        api_key = data.get('api_key')
+        
+        if not api_key:
+            return func.HttpResponse("Error: Missing API key", status_code=400)
+            
+        # Set the API key in memory
+        SERPER_API_KEY = api_key
+        
+        return func.HttpResponse("API key set successfully", status_code=200)
+    except Exception as e:
+        logging.error(f"Error setting API key: {str(e)}")
+        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+
+@app.route(route="search", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def search(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        global SERPER_API_KEY
+        data = req.get_json()
+        query = data.get('query')
+        
+        # Use the in-memory API key, or allow overriding with a request parameter
+        api_key = data.get('api_key') or SERPER_API_KEY
+        
+        if not query:
+            return func.HttpResponse("Error: Missing search query", status_code=400)
+        
+        if not api_key:
+            return func.HttpResponse("Error: Serper API key not configured. Please use the /api/set_api_key endpoint first.", status_code=400)
+            
+        logging.info(f'search [{query}]')
+        
+        # Call Serper.dev API to get search results
+        serper_url = "https://google.serper.dev/search"
+        headers = {
+            'X-API-KEY': api_key,
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'q': query,
+            'gl': 'us',
+            'hl': 'en'
+        }
+        
+        response = requests.post(serper_url, headers=headers, json=payload)
+        search_results = response.json()
+        
+        # Extract top 3 organic results
+        if 'organic' not in search_results or not search_results['organic']:
+            return func.HttpResponse("No search results found", status_code=404)
+            
+        top_results = search_results['organic'][:3]
+        results_with_content = []
+        
+        user_agent = random.choice(USER_AGENTS)
+        headers = {'User-Agent': user_agent}
+        
+        # Scrape content for each result
+        for result in top_results:
+            url = result.get('link')
+            if not url:
+                continue
+                
+            try:
+                # Use the existing scrape functionality
+                soup = try_fetch_with_backoff(url, headers)
+                # Get text with space separator to avoid literal \n characters
+                raw_content = soup.get_text(separator=' ').strip()
+                # Clean and format the content
+                content = clean_text(raw_content)
+                
+                results_with_content.append({
+                    'title': result.get('title'),
+                    'url': url,
+                    'snippet': result.get('snippet'),
+                    'content': content
+                })
+            except Exception as e:
+                logging.error(f"Failed to scrape {url}: {str(e)}")
+                results_with_content.append({
+                    'title': result.get('title'),
+                    'url': url,
+                    'snippet': result.get('snippet'),
+                    'content': f"Error: Failed to scrape content - {str(e)}"
+                })
+        
+        # Include the query and result count in the response
+        return func.HttpResponse(
+            json.dumps({
+                "query": query,
+                "result_count": len(results_with_content),
+                "results": results_with_content
+            }, ensure_ascii=False),
+            mimetype="application/json"
+        )
+        
+    except Exception as e:
+        logging.error(f"Search error: {str(e)}")
+        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
