@@ -2,22 +2,26 @@
 # Script to run all WebCat tests
 # This script activates the virtual environment and runs the tests
 
-# Move to the project root directory
+# Move to the src directory
 cd "$(dirname "$0")"
 
-# Check if virtual environment exists in src
-if [ -d "../src/.venv" ]; then
+# Activate virtual environment if it exists
+if [ -d ".venv" ]; then
   echo "Activating virtual environment..."
-  source ../src/.venv/bin/activate
+  source .venv/bin/activate
 else
   echo "Error: Virtual environment not found in src/.venv"
   echo "Please create a virtual environment and install dependencies first."
   exit 1
 fi
 
-# Run the tests
-echo "Running WebCat tests..."
-python run_all_tests.py
+# Get the absolute path to the src directory
+SRC_PATH=$(pwd)
 
-# Return the exit code from the test script
+# Run the tests with proper Python path
+echo "Running WebCat tests..."
+cd ..
+PYTHONPATH="$SRC_PATH:$PYTHONPATH" python -m pytest -v tests/
+
+# Return the exit code from the test command
 exit $? 
