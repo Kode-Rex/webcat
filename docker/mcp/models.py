@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field, HttpUrl, validator
 class QueryRequest(BaseModel):
     """Request model for search queries."""
     query: str = Field(..., description="The search query")
-    api_key: Optional[str] = Field(None, description="Optional API key for Serper")
 
 class ApiKeyRequest(BaseModel):
     """Request model for API key updates."""
