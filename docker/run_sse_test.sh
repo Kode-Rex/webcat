@@ -161,8 +161,8 @@ source venv/bin/activate
 echo "📥 Installing required packages..."
 pip install requests sseclient-py
 
-# Run the test using the server's API key
-echo "🧪 Running SSE test with server API key..."
-python3 test_sse.py --server-key
+# Run the test using the WebCAT API key
+echo "🧪 Running SSE test with WebCAT API key..."
+python3 test_sse.py --api-key "${WEBCAT_API_KEY}"
 
 echo "✅ Test completed" 

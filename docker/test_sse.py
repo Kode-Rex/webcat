@@ -23,23 +23,27 @@ def check_container_ports():
     except requests.exceptions.RequestException as e:
         print(f"❌ Port 9000: UNAVAILABLE - {str(e)}")
 
-def test_sse(use_server_key=False):
+def test_sse(webcat_api_key=None):
     """Test the SSE endpoint.
     
     Args:
-        use_server_key: If True, use the server's WEBCAT_API_KEY by specifying 'webcat'
-                        as the API key in the URL path.
+        webcat_api_key: The WebCAT API key to use for authentication.
+                        This key is used to authenticate with the WebCAT API.
     """
     # First check which servers are available
     check_container_ports()
     
-    api_key = os.environ.get("SERPER_API_KEY", "")
-    if not api_key:
-        print("Warning: No API key provided. Set SERPER_API_KEY environment variable or use --server-key")
-        print("API requests will likely fail without a valid API key")
+    # Get WebCAT API key from parameter or environment
+    if not webcat_api_key:
+        webcat_api_key = os.environ.get("WEBCAT_API_KEY", "")
+        
+    if not webcat_api_key:
+        print("Error: No WebCAT API key provided. Please provide a key with --api-key or set WEBCAT_API_KEY environment variable")
+        return
     
-    # Use the simplified endpoint format on port 9000 (new container)
-    url = f"http://localhost:9000/search/{api_key}/sse"
+    # Use the endpoint format expected by the server
+    # The API key in the URL is used for authentication with WebCAT API
+    url = f"http://localhost:9000/search/{webcat_api_key}/sse"
     
     headers = {
         "Content-Type": "application/json",
@@ -49,6 +53,7 @@ def test_sse(use_server_key=False):
     }
     
     print(f"Testing SSE endpoint: {url}")
+    print(f"Using WebCAT API key: {webcat_api_key[:4]}...{webcat_api_key[-4:] if len(webcat_api_key) > 8 else '****'}")
     
     try:
         response = requests.post(url, headers=headers, json=data, stream=True)
@@ -70,8 +75,8 @@ def test_sse(use_server_key=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test SSE endpoint')
-    parser.add_argument('--server-key', action='store_true', 
-                        help="Use server's WEBCAT_API_KEY instead of your own SERPER_API_KEY")
+    parser.add_argument('--api-key', 
+                        help="WebCAT API key for authentication")
     args = parser.parse_args()
     
-    test_sse(use_server_key=args.server_key) 
+    test_sse(webcat_api_key=args.api_key) 
