@@ -27,13 +27,16 @@ class TestMCPServer(unittest.TestCase):
         
         # Make the request with an API key to bypass validation
         response = client.post(
-            "/api/search",
+            "/api/v1/search",
             json={"query": "test query", "api_key": "test_api_key"}
         )
         
         # Check the response
         self.assertEqual(response.status_code, 404)
-        self.assertIn("No search results found", response.text)
+        data = response.json()
+        self.assertEqual(data["status_code"], 404)
+        self.assertEqual(data["error_type"], "http_exception")
+        self.assertIn("No search results found", data["message"])
         mock_fetch.assert_called_once()
     
     @patch('mcp.app.fetch_search_results')
@@ -45,6 +48,8 @@ class TestMCPServer(unittest.TestCase):
             {'title': 'Result 1', 'link': 'https://example.com/1', 'snippet': 'Snippet 1'},
             {'title': 'Result 2', 'link': 'https://example.com/2', 'snippet': 'Snippet 2'},
             {'title': 'Result 3', 'link': 'https://example.com/3', 'snippet': 'Snippet 3'},
+            {'title': 'Result 4', 'link': 'https://example.com/4', 'snippet': 'Snippet 4'},
+            {'title': 'Result 5', 'link': 'https://example.com/5', 'snippet': 'Snippet 5'},
         ]
         
         # Mock the process_search_results function
@@ -67,11 +72,23 @@ class TestMCPServer(unittest.TestCase):
                 snippet='Snippet 3',
                 content='Content for Result 3'
             ),
+            SearchResult(
+                title='Result 4',
+                url='https://example.com/4',
+                snippet='Snippet 4',
+                content='Content for Result 4'
+            ),
+            SearchResult(
+                title='Result 5',
+                url='https://example.com/5',
+                snippet='Snippet 5',
+                content='Content for Result 5'
+            ),
         ]
         
         # Make the request with an API key to bypass validation
         response = client.post(
-            "/api/search",
+            "/api/v1/search",
             json={"query": "test query", "api_key": "test_api_key"}
         )
         
@@ -79,8 +96,8 @@ class TestMCPServer(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["query"], "test query")
-        self.assertEqual(data["result_count"], 3)
-        self.assertEqual(len(data["results"]), 3)
+        self.assertEqual(data["result_count"], 5)
+        self.assertEqual(len(data["results"]), 5)
         
         # Due to parallel processing, results might come back in any order
         # Check that all expected results are in the response, regardless of order
@@ -88,6 +105,8 @@ class TestMCPServer(unittest.TestCase):
         self.assertIn("Result 1", titles)
         self.assertIn("Result 2", titles)
         self.assertIn("Result 3", titles)
+        self.assertIn("Result 4", titles)
+        self.assertIn("Result 5", titles)
         
         # Check content format for all results
         for result in data["results"]:
@@ -103,13 +122,16 @@ class TestMCPServer(unittest.TestCase):
         
         # Make the request without an API key
         response = client.post(
-            "/api/search",
+            "/api/v1/search",
             json={"query": "test query"}
         )
         
         # Check the response
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Serper API key not configured", response.text)
+        data = response.json()
+        self.assertEqual(data["status_code"], 400)
+        self.assertEqual(data["error_type"], "http_exception")
+        self.assertIn("Serper API key not configured", data["message"])
         
         # Now with a properly mocked fetch_search_results
         with patch('mcp.app.fetch_search_results') as mock_fetch:
@@ -118,12 +140,15 @@ class TestMCPServer(unittest.TestCase):
             
             # Make the request with an API key in the request
             response = client.post(
-                "/api/search",
+                "/api/v1/search",
                 json={"query": "test query", "api_key": "request_api_key"}
             )
             
             # This should now succeed and call the fetch_search_results function
             self.assertEqual(response.status_code, 404)  # Will be 404 as we mock empty results
+            data = response.json()
+            self.assertEqual(data["status_code"], 404)
+            self.assertEqual(data["error_type"], "http_exception")
             mock_fetch.assert_called_once()
     
     @patch('mcp.utils.requests.get')
@@ -193,6 +218,38 @@ class TestMCPServer(unittest.TestCase):
         data = response.json()
         self.assertEqual(data["status"], "healthy")
         self.assertEqual(data["service"], "mcp")
+        
+    def test_legacy_endpoint(self):
+        """Test the legacy endpoint."""
+        with patch('mcp.app.fetch_search_results') as mock_fetch:
+            with patch('mcp.app.process_search_results') as mock_process:
+                # Mock the fetch_search_results function
+                mock_fetch.return_value = [
+                    {'title': 'Result 1', 'link': 'https://example.com/1', 'snippet': 'Snippet 1'},
+                ]
+                
+                # Mock the process_search_results function
+                mock_process.return_value = [
+                    SearchResult(
+                        title='Result 1',
+                        url='https://example.com/1',
+                        snippet='Snippet 1',
+                        content='Content for Result 1'
+                    ),
+                ]
+                
+                # Make the request to the legacy endpoint
+                response = client.post(
+                    "/api/search",
+                    json={"query": "test query", "api_key": "test_api_key"}
+                )
+                
+                # Check the response
+                self.assertEqual(response.status_code, 200)
+                data = response.json()
+                self.assertEqual(data["query"], "test query")
+                self.assertEqual(data["result_count"], 1)
+                self.assertEqual(len(data["results"]), 1)
 
 if __name__ == '__main__':
     unittest.main() 

@@ -1,6 +1,6 @@
 """Models for the MCP server."""
 
-from typing import List, Optional
+from typing import List, Optional, Any
 from pydantic import BaseModel, Field, HttpUrl, validator
 
 class QueryRequest(BaseModel):
@@ -23,4 +23,11 @@ class SearchResponse(BaseModel):
     """Response model for search results."""
     query: str = Field(..., description="The original search query")
     result_count: int = Field(..., description="Number of results returned")
-    results: List[SearchResult] = Field(..., description="List of search results with content") 
+    results: List[SearchResult] = Field(..., description="List of search results with content")
+    
+class ErrorResponse(BaseModel):
+    """Standard error response model."""
+    status_code: int = Field(..., description="HTTP status code")
+    message: str = Field(..., description="Error message")
+    error_type: str = Field("general_error", description="Type of error")
+    details: Optional[Any] = Field(None, description="Additional error details") 
