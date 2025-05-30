@@ -1,15 +1,18 @@
 """FastAPI application for the MCP server."""
 
 import logging
+import logging.handlers
 import os
 import time
-from typing import Dict, List, Optional, Any
+import asyncio
+from typing import Dict, List, Optional, Any, AsyncIterator
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Request, Response, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.openapi.utils import get_openapi
+from sse_starlette.sse import EventSourceResponse
 
 from .models import QueryRequest, SearchResponse, SearchResult, ErrorResponse
 from .services import fetch_search_results, process_search_results
@@ -18,10 +21,51 @@ from .services import fetch_search_results, process_search_results
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+LOG_DIR = os.environ.get("LOG_DIR", "/var/log/webcat")
+LOG_FILE = os.path.join(LOG_DIR, "webcat.log")
+
+# Create log directory if it doesn't exist
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# Configure root logger
+logger = logging.getLogger()
+logger.setLevel(getattr(logging, LOG_LEVEL))
+
+# Create formatters
+console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Setup console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(console_formatter)
+logger.addHandler(console_handler)
+
+# Setup rotating file handler (10MB per file, keep 5 backup files)
+file_handler = logging.handlers.RotatingFileHandler(
+    LOG_FILE, 
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+
+logging.info("Logging initialized with file rotation at %s", LOG_FILE)
 
 # In-memory API key
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
+WEBCAT_API_KEY = os.environ.get("WEBCAT_API_KEY", "")
+
+# Improved logging for API keys
+if WEBCAT_API_KEY:
+    key_length = len(WEBCAT_API_KEY)
+    masked_key = WEBCAT_API_KEY[:4] + "*" * (key_length - 8) + WEBCAT_API_KEY[-4:] if key_length > 8 else "****"
+    logging.info(f"WEBCAT_API_KEY is set (masked: {masked_key})")
+else:
+    logging.warning("WEBCAT_API_KEY is not set! The 'webcat' API key path will not work.")
+
+logging.info(f"Using API key from environment: {'Set' if SERPER_API_KEY else 'Not set'}")
 
 # Function to set the API key (for testing)
 def set_api_key(key: str) -> None:
@@ -107,79 +151,88 @@ def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "webcat"}
 
-@app.post("/api/v1/search", response_model=SearchResponse, tags=["Search API"])
-async def search(
-    request: QueryRequest, 
+# Server-Sent Events search endpoint
+@app.post("/search/{api_key}/sse")
+async def search_with_key_sse(
+    api_key: str,
+    request: QueryRequest,
     response: Response,
     rate_limit_headers: Dict[str, str] = Depends(check_rate_limit)
 ):
     """
-    Search the web and return results with content.
+    Stream search results using Server-Sent Events with API key in the URL path.
     
     This endpoint follows the Model Context Protocol (MCP) for providing
-    search results that can be used as context for AI models.
+    streaming search results that can be used as context for AI models.
     
-    - **query**: The search query to execute
-    - **api_key**: Optional API key to override the server's key
+    - **api_key**: API key provided in the URL path or "webcat" to use the server's API key
+    - **query**: The search query to execute in the request body
     
-    Returns a SearchResponse object containing search results with content.
+    Returns a streaming response with search results.
     """
-    try:
-        global SERPER_API_KEY
-        query = request.query
-        
-        # Add rate limit headers to response
-        for header_name, header_value in rate_limit_headers.items():
-            response.headers[header_name] = header_value
+    async def event_generator() -> AsyncIterator[Dict[str, Any]]:
+        try:
+            query = request.query
             
-        # Use the in-memory API key, or allow overriding with a request parameter
-        api_key = request.api_key or SERPER_API_KEY
-        
-        if not api_key:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Serper API key not configured. Please provide an api_key in the request."
-            )
+            # Add rate limit headers to response
+            for header_name, header_value in rate_limit_headers.items():
+                response.headers[header_name] = header_value
+                
+            # If "webcat" is used as the API key, use the server's SERPER_API_KEY
+            if api_key == "webcat":
+                logging.debug(f"Using 'webcat' keyword - WEBCAT_API_KEY={'is set' if WEBCAT_API_KEY else 'is NOT set'}")
+                if not WEBCAT_API_KEY:
+                    logging.error("Server's WEBCAT_API_KEY is not configured but 'webcat' was used as the API key")
+                    yield {"event": "error", "data": "Server's WEBCAT_API_KEY is not configured."}
+                    return
+                    
+                # Use the server's SERPER_API_KEY for the actual search
+                search_api_key = SERPER_API_KEY
+                if not search_api_key:
+                    logging.error("Server's SERPER_API_KEY is not configured")
+                    yield {"event": "error", "data": "Server's SERPER_API_KEY is not configured."}
+                    return
+                    
+                logging.debug(f"Using server's SERPER_API_KEY for search")
+            elif not api_key:
+                logging.error("No API key provided in URL path")
+                yield {"event": "error", "data": "API key not provided in URL path."}
+                return
+            else:
+                search_api_key = api_key
+                logging.debug(f"Using provided API key from URL path")
+                
+            logging.info(f'MCP search stream with {"server" if api_key == "webcat" else "provided"} key: [{query}]')
             
-        logging.info(f'MCP search: [{query}]')
-        
-        # Fetch search results
-        results = fetch_search_results(query, api_key)
-        
-        if not results:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="No search results found"
-            )
-        
-        # Process search results
-        processed_results = process_search_results(results)
-        
-        # Return response
-        return SearchResponse(
-            query=query,
-            result_count=len(processed_results),
-            results=processed_results
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Search error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error: {str(e)}"
-        )
-
-# Legacy endpoint for backward compatibility
-@app.post("/api/search", response_model=SearchResponse, tags=["Legacy"])
-async def search_legacy(
-    request: QueryRequest, 
-    response: Response,
-    rate_limit_headers: Dict[str, str] = Depends(check_rate_limit)
-):
-    """Legacy search endpoint. Use /api/v1/search instead."""
-    return await search(request, response, rate_limit_headers)
+            # Fetch search results
+            results = fetch_search_results(query, search_api_key)
+            
+            if not results:
+                logging.warning(f"No search results found for query: {query}")
+                yield {"event": "error", "data": "No search results found"}
+                return
+            
+            # Send initial response with metadata
+            yield {"event": "metadata", "data": {"query": query, "result_count": len(results)}}
+            
+            # Process and stream each result
+            processed_results = process_search_results(results)
+            
+            for idx, result in enumerate(processed_results):
+                # Artificial delay to simulate streaming behavior
+                await asyncio.sleep(0.1)
+                
+                # Send each result as a separate event
+                yield {"event": "result", "data": result.dict()}
+                
+            # Send completion event
+            yield {"event": "done", "data": {"message": "All results sent"}}
+                
+        except Exception as e:
+            logging.error(f"Search stream error: {str(e)}")
+            yield {"event": "error", "data": f"Error: {str(e)}"}
+    
+    return EventSourceResponse(event_generator())
 
 # Customize OpenAPI schema
 def custom_openapi():
