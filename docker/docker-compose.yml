@@ -12,6 +12,10 @@ services:
       - PORT=${PORT:-8000}
       - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-10}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_DIR=/var/log/webcat
+    volumes:
+      - ${LOG_DIR:-./logs}:/var/log/webcat
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health"]
