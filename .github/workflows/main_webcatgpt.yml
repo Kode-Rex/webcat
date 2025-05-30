@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'customgpt/**'  # Only trigger when files in customgpt directory change
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src' # set this to the path to your web app project, defaults to the repository root
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'customgpt' # updated to the new path
   PYTHON_VERSION: '3.11' # set this to the python version to use
 
 jobs:
@@ -35,8 +37,8 @@ jobs:
 
       - name: Run tests
         run: |
-          # Set Python path to include src directory
-          PYTHONPATH=$PYTHONPATH:$(pwd)/${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} pytest -v tests/
+          # Set Python path to include customgpt directory
+          PYTHONPATH=$PYTHONPATH:$(pwd)/${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} pytest -v customgpt/tests/
 
   build:
     needs: test # Only run build if tests pass

@@ -4,7 +4,7 @@ import sys
 import os
 from unittest.mock import patch, MagicMock, mock_open
 
-# Add the src directory to the path so we can import the function_app
+# Update the import path to use the current directory structure
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import function_app
