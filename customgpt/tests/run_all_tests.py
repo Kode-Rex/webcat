@@ -7,8 +7,8 @@ import os
 import sys
 import pytest
 
-# Add the src directory to the path so tests can import function_app
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
+# Update path to import from current directory structure
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def main():
     """Run all tests in the tests directory."""

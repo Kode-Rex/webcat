@@ -1,0 +1,10 @@
+requests
+beautifulsoup4
+readability-lxml
+lxml_html_clean
+python-dotenv
+flask
+gunicorn
+fastapi
+uvicorn
+pydantic 
