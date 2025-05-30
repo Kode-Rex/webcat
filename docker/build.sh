@@ -3,9 +3,10 @@ set -e
 
 # Configuration
 IMAGE_NAME="webcat"
+USER="tmfrisinger"
 VERSION=1.1.0
-TAG="${IMAGE_NAME}:${VERSION}"
-LATEST="${IMAGE_NAME}:latest"
+TAG="${USER}/${IMAGE_NAME}:${VERSION}"
+LATEST="${USER}/${IMAGE_NAME}:latest"
 DEFAULT_PORT=8000
 
 # Navigate to the root directory
