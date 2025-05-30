@@ -196,8 +196,8 @@ def custom_openapi():
     # Add additional metadata
     openapi_schema["info"]["contact"] = {
         "name": "WebCAT MCP",
-        "url": "https://github.com/yourusername/webcat",
-        "email": "your-email@example.com"
+        "url": "https://github.com/Kode-Rex/webcat",
+        "email": "t@koderex.dev"
     }
     
     openapi_schema["info"]["license"] = {
