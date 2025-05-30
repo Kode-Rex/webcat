@@ -33,16 +33,10 @@ def test_sse(use_server_key=False):
     # First check which servers are available
     check_container_ports()
     
-    if use_server_key:
-        # Use 'webcat' as the API key to use the server's WEBCAT_API_KEY
-        api_key = "webcat"
-        print("Using server's WEBCAT_API_KEY for authentication")
-    else:
-        # Get API key from environment
-        api_key = os.environ.get("SERPER_API_KEY", "")
-        if not api_key:
-            print("Warning: No API key provided. Set SERPER_API_KEY environment variable or use --server-key")
-            print("API requests will likely fail without a valid API key")
+    api_key = os.environ.get("SERPER_API_KEY", "")
+    if not api_key:
+        print("Warning: No API key provided. Set SERPER_API_KEY environment variable or use --server-key")
+        print("API requests will likely fail without a valid API key")
     
     # Use the simplified endpoint format on port 9000 (new container)
     url = f"http://localhost:9000/search/{api_key}/sse"
