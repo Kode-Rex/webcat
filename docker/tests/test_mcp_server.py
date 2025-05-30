@@ -5,71 +5,74 @@ import unittest
 from unittest.mock import patch, MagicMock, Mock
 from fastapi.testclient import TestClient
 
-# Add the current directory to the path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add the parent directory to the path to import mcp package
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import the server
-import mcp_server
+# Import from mcp package
+from mcp.app import app
+from mcp.services import scrape_search_result
+from mcp.models import SearchResult
 
 # Initialize test client
-client = TestClient(mcp_server.app)
+client = TestClient(app)
 
 class TestMCPServer(unittest.TestCase):
     """Tests for the MCP server."""
     
-    def setUp(self):
-        """Set up before each test."""
-        # Set a test API key
-        mcp_server.SERPER_API_KEY = "test_api_key"
-    
-    @patch('mcp_server.requests.post')
-    def test_search_no_results(self, mock_post):
+    @patch('mcp.app.fetch_search_results')
+    def test_search_no_results(self, mock_fetch):
         """Test search with no results."""
-        # Mock the Serper API response with no results
-        mock_response = MagicMock()
-        mock_response.json.return_value = {'organic': []}
-        mock_post.return_value = mock_response
+        # Mock the fetch_search_results function to return empty results
+        mock_fetch.return_value = []
         
-        # Make the request
+        # Make the request with an API key to bypass validation
         response = client.post(
             "/api/search",
-            json={"query": "test query"}
+            json={"query": "test query", "api_key": "test_api_key"}
         )
         
         # Check the response
         self.assertEqual(response.status_code, 404)
         self.assertIn("No search results found", response.text)
+        mock_fetch.assert_called_once()
     
-    @patch('mcp_server.requests.post')
-    @patch('mcp_server.scrape_search_result')
-    def test_search_with_results(self, mock_scrape, mock_post):
+    @patch('mcp.app.fetch_search_results')
+    @patch('mcp.app.process_search_results')
+    def test_search_with_results(self, mock_process, mock_fetch):
         """Test search with results."""
-        # Mock the Serper API response with results
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            'organic': [
-                {'title': 'Result 1', 'link': 'https://example.com/1', 'snippet': 'Snippet 1'},
-                {'title': 'Result 2', 'link': 'https://example.com/2', 'snippet': 'Snippet 2'},
-                {'title': 'Result 3', 'link': 'https://example.com/3', 'snippet': 'Snippet 3'},
-            ]
-        }
-        mock_post.return_value = mock_response
+        # Mock the fetch_search_results function
+        mock_fetch.return_value = [
+            {'title': 'Result 1', 'link': 'https://example.com/1', 'snippet': 'Snippet 1'},
+            {'title': 'Result 2', 'link': 'https://example.com/2', 'snippet': 'Snippet 2'},
+            {'title': 'Result 3', 'link': 'https://example.com/3', 'snippet': 'Snippet 3'},
+        ]
         
-        # Mock the scrape_search_result function
-        def mock_scrape_side_effect(result):
-            return mcp_server.SearchResult(
-                title=result['title'],
-                url=result['link'],
-                snippet=result['snippet'],
-                content=f"Content for {result['title']}"
-            )
+        # Mock the process_search_results function
+        mock_process.return_value = [
+            SearchResult(
+                title='Result 1',
+                url='https://example.com/1',
+                snippet='Snippet 1',
+                content='Content for Result 1'
+            ),
+            SearchResult(
+                title='Result 2',
+                url='https://example.com/2',
+                snippet='Snippet 2',
+                content='Content for Result 2'
+            ),
+            SearchResult(
+                title='Result 3',
+                url='https://example.com/3',
+                snippet='Snippet 3',
+                content='Content for Result 3'
+            ),
+        ]
         
-        mock_scrape.side_effect = mock_scrape_side_effect
-        
-        # Make the request
+        # Make the request with an API key to bypass validation
         response = client.post(
             "/api/search",
-            json={"query": "test query"}
+            json={"query": "test query", "api_key": "test_api_key"}
         )
         
         # Check the response
@@ -89,12 +92,14 @@ class TestMCPServer(unittest.TestCase):
         # Check content format for all results
         for result in data["results"]:
             self.assertIn(f"Content for {result['title']}", result["content"])
+        
+        # Verify mocks were called
+        mock_fetch.assert_called_once()
+        mock_process.assert_called_once()
     
-    @patch('mcp_server.requests.post')
-    def test_search_missing_api_key(self, mock_post):
+    def test_search_missing_api_key(self):
         """Test search with missing API key."""
-        # Clear the API key
-        mcp_server.SERPER_API_KEY = ""
+        # No need to patch the fetch function here as we're testing the API key validation
         
         # Make the request without an API key
         response = client.post(
@@ -106,16 +111,22 @@ class TestMCPServer(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Serper API key not configured", response.text)
         
-        # Make the request with an API key in the request
-        response = client.post(
-            "/api/search",
-            json={"query": "test query", "api_key": "request_api_key"}
-        )
-        
-        # Check that the request would have proceeded (we'll just check that post was called)
-        mock_post.assert_called_once()
+        # Now with a properly mocked fetch_search_results
+        with patch('mcp.app.fetch_search_results') as mock_fetch:
+            # Return empty results for the 404
+            mock_fetch.return_value = []
+            
+            # Make the request with an API key in the request
+            response = client.post(
+                "/api/search",
+                json={"query": "test query", "api_key": "request_api_key"}
+            )
+            
+            # This should now succeed and call the fetch_search_results function
+            self.assertEqual(response.status_code, 404)  # Will be 404 as we mock empty results
+            mock_fetch.assert_called_once()
     
-    @patch('mcp_server.requests.get')
+    @patch('mcp.utils.requests.get')
     def test_scrape_search_result(self, mock_get):
         """Test the scrape_search_result function."""
         # Mock the HTTP response
@@ -131,7 +142,7 @@ class TestMCPServer(unittest.TestCase):
             'snippet': 'Test snippet',
         }
         
-        search_result = mcp_server.scrape_search_result(result)
+        search_result = scrape_search_result(result)
         
         # Check the result
         self.assertEqual(search_result.title, 'Test Result')
@@ -145,7 +156,7 @@ class TestMCPServer(unittest.TestCase):
             'snippet': 'Test snippet no URL',
         }
         
-        search_result_no_url = mcp_server.scrape_search_result(result_no_url)
+        search_result_no_url = scrape_search_result(result_no_url)
         
         # Check the result
         self.assertEqual(search_result_no_url.title, 'Test Result No URL')
@@ -153,7 +164,7 @@ class TestMCPServer(unittest.TestCase):
         self.assertEqual(search_result_no_url.snippet, 'Test snippet no URL')
         self.assertIn('Error: Missing URL', search_result_no_url.content)
     
-    @patch('mcp_server.requests.get')
+    @patch('mcp.utils.requests.get')
     def test_scrape_search_result_error(self, mock_get):
         """Test the scrape_search_result function with an error."""
         # Make the get request raise an exception
@@ -166,7 +177,7 @@ class TestMCPServer(unittest.TestCase):
             'snippet': 'Test snippet',
         }
         
-        search_result = mcp_server.scrape_search_result(result)
+        search_result = scrape_search_result(result)
         
         # Check the result
         self.assertEqual(search_result.title, 'Test Result')

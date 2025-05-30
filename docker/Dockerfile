@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy necessary files
 COPY docker/requirements.txt /app/
 COPY docker/mcp_server.py /app/
+COPY docker/mcp /app/mcp/
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt

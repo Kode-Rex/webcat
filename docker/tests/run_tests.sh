@@ -17,16 +17,10 @@ source venv/bin/activate
 
 # Install test dependencies
 pip install pytest fastapi requests-mock httpx pytest-cov
-pip install python-dotenv requests beautifulsoup4 readability-lxml
-
-# Copy the MCP server to the tests directory for accurate coverage reporting
-cp ../mcp_server.py .
+pip install python-dotenv requests beautifulsoup4 readability-lxml pydantic
 
 # Run the tests with coverage report
-pytest test_mcp_server.py -v --cov=mcp_server --cov-report=term
-
-# Clean up the copied file
-rm -f mcp_server.py
+pytest test_mcp_server.py -v --cov=mcp --cov-report=term
 
 # Deactivate the virtual environment
 deactivate
