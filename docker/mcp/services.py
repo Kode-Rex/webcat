@@ -49,23 +49,57 @@ def scrape_search_result(result: Dict[str, Any]) -> SearchResult:
 def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
     """Fetch search results from Serper API."""
     serper_url = "https://google.serper.dev/search"
+    
+    # Detailed logging of API key
+    if not api_key:
+        logging.error("API key is empty or None")
+        return []
+    
+    logging.debug(f"API key length: {len(api_key)}")
+    logging.debug(f"API key first 4 chars: {api_key[:4] if len(api_key) >= 4 else 'too short'}")
+    logging.debug(f"API key last 4 chars: {api_key[-4:] if len(api_key) >= 4 else 'too short'}")
+    
     headers = {
         'X-API-KEY': api_key,
         'Content-Type': 'application/json'
     }
+    
+    logging.debug(f"Full headers being sent: {headers}")
+    
     payload = {
         'q': query,
         'gl': 'us',
         'hl': 'en'
     }
     
-    response = requests.post(serper_url, headers=headers, json=payload)
-    search_results = response.json()
+    logging.debug(f"Full payload being sent: {payload}")
     
-    if 'organic' not in search_results or not search_results['organic']:
-        return []
+    try:
+        logging.debug("Sending request to Serper API...")
+        response = requests.post(serper_url, headers=headers, json=payload)
+        logging.debug(f"Response status code: {response.status_code}")
+        logging.debug(f"Response headers: {response.headers}")
         
-    return search_results['organic'][:3]
+        # Log response content for debugging
+        try:
+            if response.status_code != 200:
+                logging.error(f"Error response content: {response.text}")
+            else:
+                logging.debug("Response received successfully")
+        except Exception as e:
+            logging.error(f"Error reading response content: {str(e)}")
+            
+        response.raise_for_status()  # Raise exception for 4XX/5XX status codes
+        search_results = response.json()
+        
+        if 'organic' not in search_results or not search_results['organic']:
+            logging.warning(f"No organic results found in Serper API response for query: {query}")
+            return []
+            
+        return search_results['organic'][:3]
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error calling Serper API: {str(e)}")
+        return []
 
 def process_search_results(results: List[Dict[str, Any]]) -> List[SearchResult]:
     """Process search results in parallel."""
