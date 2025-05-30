@@ -3,7 +3,7 @@ set -e
 
 # Configuration
 IMAGE_NAME="webcat"
-VERSION=$(date +"%Y%m%d%H%M")
+VERSION=1.1.0
 TAG="${IMAGE_NAME}:${VERSION}"
 LATEST="${IMAGE_NAME}:latest"
 DEFAULT_PORT=8000
