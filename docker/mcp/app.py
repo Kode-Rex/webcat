@@ -165,7 +165,7 @@ async def search_with_key_sse(
     This endpoint follows the Model Context Protocol (MCP) for providing
     streaming search results that can be used as context for AI models.
     
-    - **api_key**: API key provided in the URL path or "webcat" to use the server's API key
+    - **api_key**: WebCAT API key provided in the URL path for authentication
     - **query**: The search query to execute in the request body
     
     Returns a streaming response with search results.
@@ -177,35 +177,31 @@ async def search_with_key_sse(
             # Add rate limit headers to response
             for header_name, header_value in rate_limit_headers.items():
                 response.headers[header_name] = header_value
-                
-            # If "webcat" is used as the API key, use the server's SERPER_API_KEY
-            if api_key == "webcat":
-                logging.debug(f"Using 'webcat' keyword - WEBCAT_API_KEY={'is set' if WEBCAT_API_KEY else 'is NOT set'}")
-                if not WEBCAT_API_KEY:
-                    logging.error("Server's WEBCAT_API_KEY is not configured but 'webcat' was used as the API key")
-                    yield {"event": "error", "data": "Server's WEBCAT_API_KEY is not configured."}
-                    return
-                    
-                # Use the server's SERPER_API_KEY for the actual search
-                search_api_key = SERPER_API_KEY
-                if not search_api_key:
-                    logging.error("Server's SERPER_API_KEY is not configured")
-                    yield {"event": "error", "data": "Server's SERPER_API_KEY is not configured."}
-                    return
-                    
-                logging.debug(f"Using server's SERPER_API_KEY for search")
-            elif not api_key:
-                logging.error("No API key provided in URL path")
-                yield {"event": "error", "data": "API key not provided in URL path."}
-                return
-            else:
-                search_api_key = api_key
-                logging.debug(f"Using provided API key from URL path")
-                
-            logging.info(f'MCP search stream with {"server" if api_key == "webcat" else "provided"} key: [{query}]')
             
-            # Fetch search results
-            results = fetch_search_results(query, search_api_key)
+            # Validate the WebCAT API key from URL
+            if not api_key:
+                logging.error("No WebCAT API key provided in URL path")
+                yield {"event": "error", "data": "Authentication failed: No API key provided."}
+                return
+                
+            # Validate against WEBCAT_API_KEY
+            if api_key != WEBCAT_API_KEY:
+                logging.error(f"Invalid WebCAT API key provided: {api_key[:4]}...{api_key[-4:] if len(api_key) > 8 else '****'}")
+                yield {"event": "error", "data": "Authentication failed: Invalid API key."}
+                return
+                
+            logging.debug(f"Using provided API key from URL path")
+            
+            # After successful authentication, always use SERPER_API_KEY for search
+            if not SERPER_API_KEY:
+                logging.error("Server's SERPER_API_KEY is not configured")
+                yield {"event": "error", "data": "Server configuration error: Search API key not configured."}
+                return
+                
+            logging.info(f"MCP search stream with provided key: [{query}]")
+            
+            # Fetch search results using the server's SERPER_API_KEY
+            results = fetch_search_results(query, SERPER_API_KEY)
             
             if not results:
                 logging.warning(f"No search results found for query: {query}")

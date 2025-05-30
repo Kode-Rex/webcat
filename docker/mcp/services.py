@@ -53,19 +53,28 @@ def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
         'X-API-KEY': api_key,
         'Content-Type': 'application/json'
     }
+    
+    logging.debug(f"Sending request to Serper API with key: {api_key[:4]}...{api_key[-4:] if len(api_key) > 8 else '****'}")
+    
     payload = {
         'q': query,
         'gl': 'us',
         'hl': 'en'
     }
     
-    response = requests.post(serper_url, headers=headers, json=payload)
-    search_results = response.json()
-    
-    if 'organic' not in search_results or not search_results['organic']:
-        return []
+    try:
+        response = requests.post(serper_url, headers=headers, json=payload)
+        response.raise_for_status()  # Raise exception for 4XX/5XX status codes
+        search_results = response.json()
         
-    return search_results['organic'][:3]
+        if 'organic' not in search_results or not search_results['organic']:
+            logging.warning(f"No organic results found in Serper API response for query: {query}")
+            return []
+            
+        return search_results['organic'][:3]
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error calling Serper API: {str(e)}")
+        return []
 
 def process_search_results(results: List[Dict[str, Any]]) -> List[SearchResult]:
     """Process search results in parallel."""
