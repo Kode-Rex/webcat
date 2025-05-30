@@ -22,19 +22,6 @@ def check_container_ports():
             print(f"❌ Port 9000: UNAVAILABLE (Status code: {response.status_code})")
     except requests.exceptions.RequestException as e:
         print(f"❌ Port 9000: UNAVAILABLE - {str(e)}")
-        
-    # Check port 8765 (old insight-mesh container)
-    try:
-        response = requests.get("http://localhost:8765/health", timeout=2)
-        if response.status_code == 200:
-            print("✅ Port 8765 (old insight-mesh-webcat container): AVAILABLE")
-            print(f"   Response: {response.json()}")
-        else:
-            print(f"❌ Port 8765: UNAVAILABLE (Status code: {response.status_code})")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Port 8765: UNAVAILABLE - {str(e)}")
-    
-    print("---")
 
 def test_sse(use_server_key=False):
     """Test the SSE endpoint.
