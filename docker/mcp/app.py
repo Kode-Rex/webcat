@@ -105,7 +105,7 @@ async def check_rate_limit(request: Request):
 @app.get("/health")
 def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "mcp"}
+    return {"status": "healthy", "service": "webcat"}
 
 @app.post("/api/v1/search", response_model=SearchResponse, tags=["Search API"])
 async def search(
