@@ -49,12 +49,22 @@ def scrape_search_result(result: Dict[str, Any]) -> SearchResult:
 def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
     """Fetch search results from Serper API."""
     serper_url = "https://google.serper.dev/search"
+    
+    # Detailed logging of API key
+    if not api_key:
+        logging.error("API key is empty or None")
+        return []
+    
+    logging.debug(f"API key length: {len(api_key)}")
+    logging.debug(f"API key first 4 chars: {api_key[:4] if len(api_key) >= 4 else 'too short'}")
+    logging.debug(f"API key last 4 chars: {api_key[-4:] if len(api_key) >= 4 else 'too short'}")
+    
     headers = {
         'X-API-KEY': api_key,
         'Content-Type': 'application/json'
     }
     
-    logging.debug(f"Sending request to Serper API with key: {api_key[:4]}...{api_key[-4:] if len(api_key) > 8 else '****'}")
+    logging.debug(f"Full headers being sent: {headers}")
     
     payload = {
         'q': query,
@@ -62,8 +72,23 @@ def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
         'hl': 'en'
     }
     
+    logging.debug(f"Full payload being sent: {payload}")
+    
     try:
+        logging.debug("Sending request to Serper API...")
         response = requests.post(serper_url, headers=headers, json=payload)
+        logging.debug(f"Response status code: {response.status_code}")
+        logging.debug(f"Response headers: {response.headers}")
+        
+        # Log response content for debugging
+        try:
+            if response.status_code != 200:
+                logging.error(f"Error response content: {response.text}")
+            else:
+                logging.debug("Response received successfully")
+        except Exception as e:
+            logging.error(f"Error reading response content: {str(e)}")
+            
         response.raise_for_status()  # Raise exception for 4XX/5XX status codes
         search_results = response.json()
         
