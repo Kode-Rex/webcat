@@ -2,35 +2,50 @@
 
 ## Introduction
 
-Web Cat is a serverless Python-based API hosted on Azure Functions, designed to scrape and process website content responsibly. Leveraging the readability library and BeautifulSoup, `Web Cat` extracts the main body of text and related images from web pages, making it easy to integrate website content ChatGPT through the use of Custom GPTs. 
+Web Cat is a collection of Python-based APIs designed to enhance AI models with web search and content extraction capabilities. The project includes:
 
-Using the `@Web Cat` GPT enhances ideation by seamlessly integrating web content into conversations, eliminating the need for manual copy-pasting or suffering through out dated data issues. 
+1. A serverless Python-based API hosted on Azure Functions
+2. A Model Context Protocol (MCP) server that provides web search capabilities for AI models
+
+Both implementations are designed to responsibly scrape and process website content, making it easy to integrate web content into AI applications like ChatGPT through Custom GPTs.
+
+## Components
+
+### Azure Functions API
+
+The Azure Functions API leverages the readability library and BeautifulSoup to extract the main body of text and related images from web pages.
+
+### MCP Server
+
+The Model Context Protocol (MCP) server is a FastAPI-based implementation that provides web search capabilities with enhanced content extraction. It follows the MCP specification for standardized AI model interactions.
 
 ## Features
- - **Content Extraction**: Utilizes the readability library for clean text extraction.
- - **Text Processing**: Further processes extracted content for improved usability.
- - **Search Functionality**: Integrates with Serper.dev to provide web search capabilities.
+ - **Content Extraction**: Utilizes the readability library for clean text extraction
+ - **Text Processing**: Further processes extracted content for improved usability
+ - **Search Functionality**: Integrates with Serper.dev to provide web search capabilities
+ - **MCP Compliance**: Follows standardized Model Context Protocol specifications
+ - **Rate Limiting**: Protects the API from abuse with configurable rate limits
+ - **API Versioning**: Ensures backward compatibility as the API evolves
 
 ## Getting Started
 
-### Prerequisites
+For the Azure Functions API:
+- See the `customgpt` directory for specific documentation
 
-- Azure Functions Core Tools
-- Python 3.11
-- An Azure account and subscription
-
-## Local Development
-
-Prepare your local environment by running:
-
-```bash
-cd src
-pip install -r requirements.txt
-func start
-```
+For the MCP Server:
+- See the `docker` directory for build and deployment instructions
 
 ## Limitations and Considerations
-- **Text-Based Content**: The API is optimized for text and image content and may not accurately represent other multimedia or dynamic web content.
+- **Text-Based Content**: The APIs are optimized for text and image content and may not accurately represent other multimedia or dynamic web content.
+- **API Keys**: A Serper API key is required for search functionality
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the terms of the license included in the repository.
 
 ## Usage
 
