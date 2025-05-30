@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-IMAGE_NAME="webcat/mcp"
+IMAGE_NAME="webcat/webcat"
 VERSION=$(date +"%Y%m%d%H%M")
 TAG="${IMAGE_NAME}:${VERSION}"
 LATEST="${IMAGE_NAME}:latest"
@@ -11,7 +11,7 @@ DEFAULT_PORT=8000
 # Navigate to the root directory
 cd "$(dirname "$0")/.."
 
-echo "Building Docker image for FastAPI MCP: ${TAG}"
+echo "Building Docker image for FastAPI WebCAT: ${TAG}"
 docker build -t ${TAG} -t ${LATEST} -f docker/Dockerfile .
 
 echo "Docker image built successfully!"
