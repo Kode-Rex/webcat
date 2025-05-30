@@ -9,12 +9,26 @@ This directory contains the FastAPI-based Model Context Protocol (MCP) server th
 - Serper API integration for high-quality search results
 - FastAPI-powered with OpenAPI documentation
 - Containerized for easy deployment
+- MCP-compliant API design
+- API versioning for backward compatibility
+- Rate limiting to prevent abuse
+- Consistent error handling
+- Enhanced documentation
 
 ## Prerequisites
 
 - Docker
 - Docker Compose (optional, for local development)
 - Serper API key (required for search functionality)
+
+## Code Structure
+
+The server code is organized into a clean, modular structure:
+
+- `mcp/app.py` - Main FastAPI application and route definitions
+- `mcp/models.py` - Pydantic models for request/response validation
+- `mcp/services.py` - Core business logic for web search and content extraction
+- `mcp/utils.py` - Utility functions and helper classes
 
 ## Configuration
 
@@ -24,6 +38,8 @@ The MCP server can be configured using environment variables:
 
 - `SERPER_API_KEY`: Your Serper API key for web search functionality
 - `PORT`: The port on which the MCP server will run (default: 8000)
+- `RATE_LIMIT_WINDOW`: Time window in seconds for rate limiting (default: 60)
+- `RATE_LIMIT_MAX_REQUESTS`: Maximum number of requests allowed in the time window (default: 10)
 
 ### Setting Environment Variables
 
@@ -43,7 +59,7 @@ docker-compose up
 When using Docker directly:
 
 ```bash
-docker run -p 9000:9000 -e SERPER_API_KEY=your_serper_api_key -e PORT=9000 webcat/mcp:latest
+docker run -p 9000:9000 -e SERPER_API_KEY=your_serper_api_key -e PORT=9000 webcat:latest
 ```
 
 ## Building the Docker Image
@@ -77,15 +93,15 @@ docker-compose up
 You can also run the container directly with Docker:
 
 ```bash
-docker run -p 8000:8000 -e SERPER_API_KEY=your_serper_api_key webcat/mcp:latest
+docker run -p 8000:8000 -e SERPER_API_KEY=your_serper_api_key webcat:latest
 ```
 
 ## API Endpoints
 
 The container exposes the following API endpoints:
 
-- `POST /api/set_api_key` - Set the Serper API key
-- `POST /api/search` - Search the web and return results with enhanced content
+- `POST /api/v1/set_api_key` - Set the Serper API key
+- `POST /api/v1/search` - Search the web and return results with enhanced content
 - `GET /health` - Health check endpoint
 - `GET /docs` - FastAPI automatic API documentation
 
@@ -94,7 +110,7 @@ The container exposes the following API endpoints:
 ### Set API Key
 
 ```bash
-curl -X POST http://localhost:8000/api/set_api_key \
+curl -X POST http://localhost:8000/api/v1/set_api_key \
   -H "Content-Type: application/json" \
   -d '{"api_key": "your_serper_api_key"}'
 ```
@@ -102,7 +118,7 @@ curl -X POST http://localhost:8000/api/set_api_key \
 ### Search the Web
 
 ```bash
-curl -X POST http://localhost:8000/api/search \
+curl -X POST http://localhost:8000/api/v1/search \
   -H "Content-Type: application/json" \
   -d '{"query": "latest AI developments"}'
 ```
@@ -110,6 +126,17 @@ curl -X POST http://localhost:8000/api/search \
 ### View API Documentation
 
 Open your browser and navigate to `http://localhost:8000/docs` to view the interactive API documentation provided by FastAPI's Swagger UI.
+
+## Rate Limiting
+
+The server implements rate limiting to prevent abuse:
+
+- Default: 10 requests per 60-second window per IP address
+- When rate limit is exceeded, the server returns a 429 status code
+- Rate limit headers are included in responses:
+  - `X-RateLimit-Limit`: Maximum requests allowed in the window
+  - `X-RateLimit-Remaining`: Remaining requests in the current window
+  - `X-RateLimit-Reset`: Seconds until the window resets
 
 ## Testing
 
@@ -120,6 +147,7 @@ The MCP server includes a comprehensive test suite to ensure functionality. The 
 - Error handling
 - API key validation
 - Health check endpoint
+- Rate limiting
 
 ### Running Tests
 
@@ -136,8 +164,4 @@ chmod +x run_tests.sh
 ./run_tests.sh
 ```
 
-The test script will install any necessary dependencies and run the tests with coverage reporting.
-
-### Test Coverage
-
-The tests use pytest-cov to generate coverage reports. This helps ensure that all critical parts of the codebase are properly tested. 
+The test script will install any necessary dependencies and run the tests with coverage reporting. 

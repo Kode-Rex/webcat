@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-IMAGE_NAME="webcat/webcat"
+IMAGE_NAME="webcat"
 VERSION=$(date +"%Y%m%d%H%M")
 TAG="${IMAGE_NAME}:${VERSION}"
 LATEST="${IMAGE_NAME}:latest"
@@ -20,6 +20,9 @@ echo "docker run -p ${DEFAULT_PORT}:${DEFAULT_PORT} -e SERPER_API_KEY=your_key $
 echo ""
 echo "To run on a custom port:"
 echo "docker run -p 9000:9000 -e PORT=9000 -e SERPER_API_KEY=your_key ${LATEST}"
+echo ""
+echo "To customize rate limiting:"
+echo "docker run -p ${DEFAULT_PORT}:${DEFAULT_PORT} -e SERPER_API_KEY=your_key -e RATE_LIMIT_WINDOW=60 -e RATE_LIMIT_MAX_REQUESTS=10 ${LATEST}"
 echo ""
 echo "To push to a registry, run:"
 echo "docker push ${TAG}"
