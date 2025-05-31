@@ -67,12 +67,6 @@ else:
 
 logging.info(f"Using API key from environment: {'Set' if SERPER_API_KEY else 'Not set'}")
 
-# Function to set the API key (for testing)
-def set_api_key(key: str) -> None:
-    """Set the API key (for testing)."""
-    global SERPER_API_KEY
-    SERPER_API_KEY = key
-
 # Initialize FastAPI app
 app = FastAPI(
     title="Model Context Protocol (MCP) Server",

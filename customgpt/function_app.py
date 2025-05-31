@@ -132,24 +132,6 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
         logging.error(f"Error: {str(e)}")
         return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
-@app.route(route="set_api_key", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
-def set_api_key(req: func.HttpRequest) -> func.HttpResponse:
-    try:
-        global SERPER_API_KEY
-        data = req.get_json()
-        api_key = data.get('api_key')
-        
-        if not api_key:
-            return func.HttpResponse("Error: Missing API key", status_code=400)
-            
-        # Set the API key in memory
-        SERPER_API_KEY = api_key
-        
-        return func.HttpResponse("API key set successfully", status_code=200)
-    except Exception as e:
-        logging.error(f"Error setting API key: {str(e)}")
-        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
-
 @app.route(route="search", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def search(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -164,7 +146,7 @@ def search(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse("Error: Missing search query", status_code=400)
         
         if not api_key:
-            return func.HttpResponse("Error: Serper API key not configured. Please use the /api/set_api_key endpoint first.", status_code=400)
+            return func.HttpResponse("Error: Serper API key not configured. Please set the SERPER_API_KEY environment variable or provide it in the request.", status_code=400)
             
         logging.info(f'search [{query}]')
         

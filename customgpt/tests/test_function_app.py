@@ -21,34 +21,6 @@ def mock_http_request():
     
     return MockHttpRequest
 
-def test_set_api_key(mock_http_request):
-    """Test setting the API key."""
-    # Create a mock request with an API key
-    request = mock_http_request(body='{"api_key": "test_api_key"}')
-    
-    # Reset the global API key
-    function_app.SERPER_API_KEY = ""
-    
-    # Call the function
-    response = function_app.set_api_key(request)
-    
-    # Check the response
-    assert response.status_code == 200
-    assert response.get_body().decode() == "API key set successfully"
-    assert function_app.SERPER_API_KEY == "test_api_key"
-
-def test_set_api_key_missing(mock_http_request):
-    """Test setting an empty API key."""
-    # Create a mock request with no API key
-    request = mock_http_request(body='{}')
-    
-    # Call the function
-    response = function_app.set_api_key(request)
-    
-    # Check the response
-    assert response.status_code == 400
-    assert "Error: Missing API key" in response.get_body().decode()
-
 @patch('function_app.requests.get')
 def test_fetch_content(mock_get, mock_http_request):
     """Test the fetch_content function."""
