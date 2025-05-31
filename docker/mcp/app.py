@@ -230,6 +230,91 @@ async def search_with_key_sse(
     
     return EventSourceResponse(event_generator())
 
+# RESTful search endpoint
+@app.post("/search/{api_key}/rest")
+async def search_with_key_rest(
+    api_key: str,
+    request: QueryRequest,
+    response: Response,
+    rate_limit_headers: Dict[str, str] = Depends(check_rate_limit)
+):
+    """
+    Return search results as a standard JSON response with API key in the URL path.
+    
+    This endpoint provides a RESTful alternative to the SSE endpoint for getting
+    search results that can be used as context for AI models.
+    
+    - **api_key**: WebCAT API key provided in the URL path for authentication
+    - **query**: The search query to execute in the request body
+    
+    Returns a JSON response with search results.
+    """
+    try:
+        query = request.query
+        
+        # Add rate limit headers to response
+        for header_name, header_value in rate_limit_headers.items():
+            response.headers[header_name] = header_value
+        
+        # Validate the WebCAT API key from URL
+        if not api_key:
+            logging.error("No WebCAT API key provided in URL path")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication failed: No API key provided."
+            )
+            
+        # Validate against WEBCAT_API_KEY
+        if api_key != WEBCAT_API_KEY:
+            logging.error(f"Invalid WebCAT API key provided: {api_key[:4]}...{api_key[-4:] if len(api_key) > 8 else '****'}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication failed: Invalid API key."
+            )
+            
+        logging.info(f"RESTful endpoint authenticated with valid WEBCAT_API_KEY")
+        
+        # After successful authentication, always use SERPER_API_KEY for search
+        if not SERPER_API_KEY:
+            logging.error("Server's SERPER_API_KEY is not configured")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Server configuration error: Search API key not configured."
+            )
+            
+        logging.info(f"MCP RESTful search with provided key: [{query}]")
+        
+        # Fetch search results using the server's SERPER_API_KEY
+        results = fetch_search_results(query, SERPER_API_KEY)
+        
+        if not results:
+            logging.warning(f"No search results found for query: {query}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No search results found"
+            )
+        
+        # Process results
+        processed_results = process_search_results(results)
+        
+        # Prepare response data
+        response_data = {
+            "query": query,
+            "result_count": len(processed_results),
+            "results": [result.dict() for result in processed_results]
+        }
+        
+        return SearchResponse(**response_data)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"RESTful search error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
+        )
+
 # Customize OpenAPI schema
 def custom_openapi():
     if app.openapi_schema:

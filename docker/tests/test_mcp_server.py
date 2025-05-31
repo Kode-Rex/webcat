@@ -250,6 +250,64 @@ class TestMCPServer(unittest.TestCase):
                 self.assertEqual(data["query"], "test query")
                 self.assertEqual(data["result_count"], 1)
                 self.assertEqual(len(data["results"]), 1)
+    
+    @patch('mcp.app.WEBCAT_API_KEY', 'test_webcat_key')
+    @patch('mcp.app.SERPER_API_KEY', 'test_serper_key')
+    @patch('mcp.app.fetch_search_results')
+    @patch('mcp.app.process_search_results')
+    def test_rest_endpoint(self, mock_process, mock_fetch):
+        """Test the RESTful endpoint."""
+        # Mock the fetch_search_results function
+        mock_fetch.return_value = [
+            {'title': 'REST Result 1', 'link': 'https://example.com/rest1', 'snippet': 'REST Snippet 1'},
+            {'title': 'REST Result 2', 'link': 'https://example.com/rest2', 'snippet': 'REST Snippet 2'},
+        ]
+        
+        # Mock the process_search_results function
+        mock_process.return_value = [
+            SearchResult(
+                title='REST Result 1',
+                url='https://example.com/rest1',
+                snippet='REST Snippet 1',
+                content='Content for REST Result 1'
+            ),
+            SearchResult(
+                title='REST Result 2',
+                url='https://example.com/rest2',
+                snippet='REST Snippet 2',
+                content='Content for REST Result 2'
+            ),
+        ]
+        
+        # Make the request to the RESTful endpoint with valid API key
+        response = client.post(
+            "/search/test_webcat_key/rest",
+            json={"query": "rest query"}
+        )
+        
+        # Check the response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["query"], "rest query")
+        self.assertEqual(data["result_count"], 2)
+        self.assertEqual(len(data["results"]), 2)
+        
+        # Check result content
+        titles = [result["title"] for result in data["results"]]
+        self.assertIn("REST Result 1", titles)
+        self.assertIn("REST Result 2", titles)
+        
+        # Test with invalid API key
+        response = client.post(
+            "/search/invalid_api_key/rest",
+            json={"query": "rest query"}
+        )
+        
+        # Check for authentication failure
+        self.assertEqual(response.status_code, 401)
+        data = response.json()
+        self.assertEqual(data["status_code"], 401)
+        self.assertIn("Invalid API key", data["message"])
 
 if __name__ == '__main__':
     unittest.main() 
