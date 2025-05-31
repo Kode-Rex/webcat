@@ -4,7 +4,7 @@ set -e
 # Configuration
 IMAGE_NAME="webcat"
 USER="tmfrisinger"
-VERSION=1.1.0
+VERSION=1.2.0
 TAG="${USER}/${IMAGE_NAME}:${VERSION}"
 LATEST="${USER}/${IMAGE_NAME}:latest"
 DEFAULT_PORT=8000
