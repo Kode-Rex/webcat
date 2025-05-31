@@ -37,6 +37,7 @@ The MCP server can be configured using environment variables:
 ### Environment Variables
 
 - `SERPER_API_KEY`: Your Serper API key for web search functionality
+- `WEBCAT_API_KEY`: Your WebCAT API key for authenticating API requests to the /search endpoints
 - `PORT`: The port on which the MCP server will run (default: 8000)
 - `RATE_LIMIT_WINDOW`: Time window in seconds for rate limiting (default: 60)
 - `RATE_LIMIT_MAX_REQUESTS`: Maximum number of requests allowed in the time window (default: 10)
@@ -46,8 +47,9 @@ The MCP server can be configured using environment variables:
 When using Docker Compose:
 
 ```bash
-# Set your Serper API key
+# Set your API keys
 export SERPER_API_KEY=your_serper_api_key
+export WEBCAT_API_KEY=your_webcat_api_key
 
 # Optionally, set a custom port (default is 8000)
 export PORT=9000
@@ -59,7 +61,11 @@ docker-compose up
 When using Docker directly:
 
 ```bash
-docker run -p 9000:9000 -e SERPER_API_KEY=your_serper_api_key -e PORT=9000 webcat:latest
+docker run -p 9000:9000 \
+  -e SERPER_API_KEY=your_serper_api_key \
+  -e WEBCAT_API_KEY=your_webcat_api_key \
+  -e PORT=9000 \
+  webcat:latest
 ```
 
 ## Building the Docker Image
@@ -100,25 +106,34 @@ docker run -p 8000:8000 -e SERPER_API_KEY=your_serper_api_key webcat:latest
 
 The container exposes the following API endpoints:
 
-- `POST /api/v1/set_api_key` - Set the Serper API key
 - `POST /api/v1/search` - Search the web and return results with enhanced content
+- `POST /search/{api_key}/sse` - Stream search results using Server-Sent Events (SSE)
+- `POST /search/{api_key}/rest` - Get search results as a standard RESTful JSON response
 - `GET /health` - Health check endpoint
 - `GET /docs` - FastAPI automatic API documentation
 
 ## Example Usage
 
-### Set API Key
-
-```bash
-curl -X POST http://localhost:8000/api/v1/set_api_key \
-  -H "Content-Type: application/json" \
-  -d '{"api_key": "your_serper_api_key"}'
-```
-
-### Search the Web
+### Search the Web (Legacy Endpoint)
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "latest AI developments"}'
+```
+
+### Search with SSE Streaming
+
+```bash
+curl -X POST http://localhost:8000/search/your_webcat_api_key/sse \
+  -H "Content-Type: application/json" \
+  -d '{"query": "latest AI developments"}'
+```
+
+### Search with RESTful API
+
+```bash
+curl -X POST http://localhost:8000/search/your_webcat_api_key/rest \
   -H "Content-Type: application/json" \
   -d '{"query": "latest AI developments"}'
 ```
@@ -164,4 +179,22 @@ chmod +x run_tests.sh
 ./run_tests.sh
 ```
 
-The test script will install any necessary dependencies and run the tests with coverage reporting. 
+The test script will install any necessary dependencies and run the tests with coverage reporting.
+
+### Testing SSE and RESTful Endpoints
+
+For convenience, there are also scripts to test the SSE and RESTful endpoints:
+
+```bash
+# Make the scripts executable
+chmod +x run_sse_test.sh
+chmod +x run_rest_test.sh
+
+# Test the SSE endpoint
+./run_sse_test.sh
+
+# Test the RESTful endpoint
+./run_rest_test.sh
+```
+
+These scripts will start a Docker container with the MCP server if it's not already running, and test the respective endpoints with a sample query. 
