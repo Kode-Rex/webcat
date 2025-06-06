@@ -9,16 +9,15 @@ services:
       - "${PORT:-8000}:${PORT:-8000}"
     environment:
       - SERPER_API_KEY=${SERPER_API_KEY}
+      - WEBCAT_API_KEY=${WEBCAT_API_KEY}
       - PORT=${PORT:-8000}
-      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
-      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-10}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_DIR=/var/log/webcat
     volumes:
       - ${LOG_DIR:-./logs}:/var/log/webcat
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/mcp/health"]
       interval: 30s
       timeout: 10s
       retries: 3
