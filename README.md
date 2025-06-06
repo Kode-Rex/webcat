@@ -29,6 +29,7 @@ The Model Context Protocol (MCP) server is a FastAPI-based implementation that p
  - **API Versioning**: Ensures backward compatibility as the API evolves
  - **Docker Support**: Easy deployment with Docker containers
  - **Parallel Processing**: Faster response times with parallel search result processing
+ - **Comprehensive Testing**: Includes unit tests for core functionality
 
 ## Getting Started
 
@@ -69,6 +70,19 @@ For more detailed Docker information, see the `docker/README.md` file.
 - `PORT`: The port to run the server on (default: 8000)
 - `RATE_LIMIT_WINDOW`: Time window in seconds for rate limiting (default: 60)
 - `RATE_LIMIT_MAX_REQUESTS`: Max requests per window (default: 10)
+
+## Testing
+
+The project includes comprehensive test suites for both the Azure Functions API and the MCP Server:
+
+### MCP Server Tests
+```bash
+# Navigate to the tests directory
+cd docker/tests
+
+# Run the tests
+python -m unittest test_mcp_server.py
+```
 
 ## Limitations and Considerations
 - **Text-Based Content**: The APIs are optimized for text and image content and may not accurately represent other multimedia or dynamic web content.

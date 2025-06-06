@@ -14,6 +14,7 @@ This directory contains the FastAPI-based Model Context Protocol (MCP) server th
 - Rate limiting to prevent abuse
 - Consistent error handling
 - Enhanced documentation
+- Comprehensive test suite
 
 ## Prerequisites
 
@@ -29,6 +30,7 @@ The server code is organized into a clean, modular structure:
 - `mcp/models.py` - Pydantic models for request/response validation
 - `mcp/services.py` - Core business logic for web search and content extraction
 - `mcp/utils.py` - Utility functions and helper classes
+- `tests/` - Unit tests for core functionality
 
 ## Configuration
 
@@ -47,9 +49,8 @@ The MCP server can be configured using environment variables:
 When using Docker Compose:
 
 ```bash
-# Set your API keys
+# Set your Serper API key as an environment variable
 export SERPER_API_KEY=your_serper_api_key
-export WEBCAT_API_KEY=your_webcat_api_key
 
 # Optionally, set a custom port (default is 8000)
 export PORT=9000
@@ -158,11 +159,9 @@ The server implements rate limiting to prevent abuse:
 The MCP server includes a comprehensive test suite to ensure functionality. The tests cover:
 
 - Web search functionality
-- Parallel processing of search results
-- Error handling
-- API key validation
-- Health check endpoint
-- Rate limiting
+- Content extraction and processing
+- Error handling and exception cases
+- Health check endpoints
 
 ### Running Tests
 
@@ -170,31 +169,39 @@ To run the tests locally:
 
 ```bash
 # Navigate to the tests directory
-cd docker/tests
-
-# Make the test script executable if needed
-chmod +x run_tests.sh
+cd tests
 
 # Run the tests
-./run_tests.sh
+python -m unittest test_mcp_server.py
 ```
 
-The test script will install any necessary dependencies and run the tests with coverage reporting.
+The test suite uses Python's unittest framework and includes mocks for external dependencies to ensure reliable testing.
 
-### Testing SSE and RESTful Endpoints
+### Test Coverage
+
+The tests verify the following key functionalities:
+
+- Successful content extraction from URLs
+- Proper handling of HTTP errors
+- Handling of network exceptions
+- Proper processing of search results
+
+These tests help ensure that the MCP server can handle a variety of inputs and error conditions gracefully.
+
+## Additional Test Scripts
 
 For convenience, there are also scripts to test the SSE and RESTful endpoints:
 
 ```bash
 # Make the scripts executable
-chmod +x run_sse_test.sh
-chmod +x run_rest_test.sh
+chmod +x test_sse.py
+chmod +x test_serper.py
 
 # Test the SSE endpoint
-./run_sse_test.sh
+python test_sse.py
 
-# Test the RESTful endpoint
-./run_rest_test.sh
+# Test the Serper API integration
+python test_serper.py
 ```
 
-These scripts will start a Docker container with the MCP server if it's not already running, and test the respective endpoints with a sample query. 
+These scripts help verify that the server is correctly configured and can communicate with external APIs. 
