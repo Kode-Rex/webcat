@@ -5,7 +5,6 @@ WORKDIR /app
 # Copy necessary files
 COPY docker/requirements.txt /app/
 COPY docker/mcp_server.py /app/
-COPY docker/mcp /app/mcp/
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -22,5 +21,5 @@ ENV LOG_DIR=/var/log/webcat
 # Expose the configurable port
 EXPOSE ${PORT}
 
-# Command to run the application with uvicorn using the configurable port
-CMD uvicorn mcp_server:app --host 0.0.0.0 --port ${PORT} 
+# Command to run the application
+CMD python mcp_server.py 
