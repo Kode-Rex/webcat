@@ -78,6 +78,7 @@ logging.info(f"Using SERPER API key from environment: {'Set' if SERPER_API_KEY e
 mcp_server = FastMCP(
     name="WebCat Search",
     description="A server providing web search capabilities to models following the MCP protocol",
+    version="1.0.0",
     authentication_key=WEBCAT_API_KEY
 )
 
@@ -211,13 +212,10 @@ async def health_check():
     """Check the health of the server."""
     return {"status": "healthy", "service": "webcat"}
 
+# Get the starlette app
+app = mcp_server.http_app().app
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logging.info(f"Starting FastMCP server on port {port}")
-    
-    # Run the server
-    mcp_server.run(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=port
-    ) 
+    uvicorn.run(app, host="0.0.0.0", port=port) 
