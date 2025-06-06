@@ -4,6 +4,7 @@ import logging
 from readability import Document
 import requests
 from bs4 import BeautifulSoup
+import html2text
 import random
 import time
 from urllib.parse import urlparse
@@ -29,8 +30,60 @@ def fetch_content(url, headers):
     response = requests.get(url, headers=headers)
     html_content = response.content.decode(response.encoding or 'utf-8')
     doc = Document(html_content)
+    title = doc.title()
     summary_html = doc.summary(html_partial=True)
+    
+    # Pre-process HTML to handle special elements
     soup = BeautifulSoup(summary_html, 'html.parser')
+    
+    # Handle code blocks better - ensure they have language tags when possible
+    for pre in soup.find_all('pre'):
+        if pre.code and pre.code.get('class'):
+            classes = pre.code.get('class')
+            # Look for language classes like 'language-python', 'python', etc.
+            language = None
+            for cls in classes:
+                if cls.startswith(('language-', 'lang-')) or cls in ['python', 'javascript', 'css', 'html', 'java', 'php', 'c', 'cpp', 'csharp', 'ruby', 'go']:
+                    language = cls.replace('language-', '').replace('lang-', '')
+                    break
+            
+            if language:
+                # Wrap in markdown code fence with language
+                pre.insert_before(f'```{language}')
+                pre.insert_after('```')
+    
+    # Handle LaTeX/MathJax by preserving the markup
+    for math in soup.find_all(['math', 'script']):
+        if math.name == 'script' and math.get('type') in ['math/tex', 'math/tex; mode=display', 'application/x-mathjax-config']:
+            # Preserve math content
+            math.replace_with(f'$$${math.string}$$$')
+        elif math.name == 'math':
+            # Preserve MathML
+            math.replace_with(f'$$${str(math)}$$$')
+    
+    # Convert HTML to Markdown
+    h = html2text.HTML2Text()
+    h.ignore_links = False
+    h.ignore_images = False
+    h.body_width = 0  # No wrapping
+    h.unicode_snob = True  # Use Unicode instead of ASCII
+    h.escape_snob = True  # Don't escape special chars
+    h.use_automatic_links = True  # Auto-link URLs
+    h.mark_code = True  # Use markdown syntax for code blocks
+    h.single_line_break = False  # Use two line breaks to create a new paragraph
+    h.table_border_style = "html"  # Use HTML table borders
+    h.images_to_alt = False  # Include image URLs
+    h.protect_links = True  # Don't convert links to references
+    
+    # Get the markdown content
+    markdown_content = h.handle(str(soup))
+    
+    # Add title and metadata at the beginning
+    full_markdown = f"# {title}\n\n*Source: {url}*\n\n{markdown_content}"
+    
+    # Keep the soup object for backward compatibility
+    soup.markdown_content = full_markdown
+    
     return soup
 
 def clean_text(text):
@@ -74,8 +127,8 @@ def scrape(req: func.HttpRequest) -> func.HttpResponse:
             logging.error(f"Requests failed: {str(e)}")
             return func.HttpResponse(f"Error: Failed to scrape the URL - {str(e)}", status_code=500)
 
-        raw_content = soup.get_text(separator=' ').strip()
-        content = clean_text(raw_content)
+        # Use the markdown content instead of text
+        content = soup.markdown_content if hasattr(soup, 'markdown_content') else clean_text(soup.get_text(separator=' ').strip())
 
         return func.HttpResponse(content, mimetype="text/plain")
     except Exception as e:
@@ -184,10 +237,14 @@ def search(req: func.HttpRequest) -> func.HttpResponse:
             try:
                 # Use the existing scrape functionality
                 soup = try_fetch_with_backoff(url, headers)
-                # Get text with space separator to avoid literal \n characters
-                raw_content = soup.get_text(separator=' ').strip()
-                # Clean and format the content
-                content = clean_text(raw_content)
+                
+                # Use the markdown content if available
+                if hasattr(soup, 'markdown_content'):
+                    content = soup.markdown_content
+                else:
+                    # Fallback to the old method
+                    raw_content = soup.get_text(separator=' ').strip()
+                    content = clean_text(raw_content)
                 
                 results_with_content.append({
                     'title': result.get('title'),
