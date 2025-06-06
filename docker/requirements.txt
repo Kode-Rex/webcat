@@ -9,3 +9,5 @@ fastapi
 uvicorn
 pydantic
 sse-starlette 
+httpx
+fastmcp>=2.7.0 
