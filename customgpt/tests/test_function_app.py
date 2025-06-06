@@ -7,6 +7,10 @@ from unittest.mock import patch, MagicMock, mock_open
 # Update the import path to use the current directory structure
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Mock html2text module
+sys.modules['html2text'] = MagicMock()
+sys.modules['html2text'].HTML2Text = MagicMock()
+
 import function_app
 
 @pytest.fixture
@@ -22,19 +26,35 @@ def mock_http_request():
     return MockHttpRequest
 
 @patch('function_app.requests.get')
-def test_fetch_content(mock_get, mock_http_request):
+@patch('function_app.Document')
+def test_fetch_content(mock_document, mock_get, mock_http_request):
     """Test the fetch_content function."""
     # Set up the mock response
     mock_response = MagicMock()
-    mock_response.content = b'<html><body><article><p>Test content</p></article></body></html>'
+    mock_response.content = b'<html><head><title>Test Page</title></head><body><article><p>Test content</p></article></body></html>'
     mock_response.encoding = 'utf-8'
     mock_get.return_value = mock_response
+    
+    # Setup mock Document instance
+    mock_doc = MagicMock()
+    mock_doc.title.return_value = "Test Page"
+    mock_doc.summary.return_value = "<p>Test content</p>"
+    mock_document.return_value = mock_doc
+    
+    # Mock html2text
+    mock_html2text = MagicMock()
+    mock_h = MagicMock()
+    mock_h.handle.return_value = "Test content in markdown"
+    function_app.html2text.HTML2Text = MagicMock(return_value=mock_h)
     
     # Call the function
     soup = function_app.fetch_content('https://example.com', {'User-Agent': 'test'})
     
     # Check the result
-    assert 'Test content' in soup.get_text()
+    assert hasattr(soup, 'markdown_content')
+    assert "Test Page" in soup.markdown_content
+    assert "Source: https://example.com" in soup.markdown_content
+    assert "Test content in markdown" in soup.markdown_content
     mock_get.assert_called_once_with('https://example.com', headers={'User-Agent': 'test'})
 
 @patch('function_app.try_fetch_with_backoff')
@@ -43,6 +63,7 @@ def test_scrape(mock_fetch, mock_http_request):
     # Set up the mock
     mock_soup = MagicMock()
     mock_soup.get_text.return_value = "Test content"
+    mock_soup.markdown_content = "# Test Page\n\n*Source: https://example.com*\n\nTest content in markdown"
     mock_fetch.return_value = mock_soup
     
     # Create a mock request
@@ -53,7 +74,10 @@ def test_scrape(mock_fetch, mock_http_request):
     
     # Check the response
     assert response.status_code == 200
-    assert "Test content" in response.get_body().decode()
+    content = response.get_body().decode()
+    assert "Test Page" in content
+    assert "Source: https://example.com" in content
+    assert "Test content in markdown" in content
     mock_fetch.assert_called_once()
 
 @patch('function_app.try_fetch_with_backoff')
@@ -88,9 +112,15 @@ def test_search(mock_fetch, mock_post, mock_http_request):
     mock_post.return_value = mock_serper_response
     
     # Mock the content fetching
-    mock_soup = MagicMock()
-    mock_soup.get_text.return_value = "Test content"
-    mock_fetch.return_value = mock_soup
+    mock_soup1 = MagicMock()
+    mock_soup1.get_text.return_value = "Test content 1"
+    mock_soup1.markdown_content = "# Test Result 1\n\n*Source: https://example.com/1*\n\nMarkdown content 1"
+    
+    mock_soup2 = MagicMock()
+    mock_soup2.get_text.return_value = "Test content 2"
+    mock_soup2.markdown_content = "# Test Result 2\n\n*Source: https://example.com/2*\n\nMarkdown content 2"
+    
+    mock_fetch.side_effect = [mock_soup1, mock_soup2]
     
     # Create a mock request
     request = mock_http_request(body='{"query": "test query"}')
@@ -106,7 +136,7 @@ def test_search(mock_fetch, mock_post, mock_http_request):
     assert len(response_body["results"]) == 2
     assert response_body["results"][0]["title"] == "Test Result 1"
     assert response_body["results"][0]["url"] == "https://example.com/1"
-    assert "Test content" in response_body["results"][0]["content"]
+    assert "Markdown content 1" in response_body["results"][0]["content"]
     
     # Verify that the Serper API was called correctly
     mock_post.assert_called_once()

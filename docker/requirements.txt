@@ -10,4 +10,5 @@ uvicorn
 pydantic
 sse-starlette 
 httpx
-fastmcp>=2.7.0 
+fastmcp>=2.7.0
+html2text 
