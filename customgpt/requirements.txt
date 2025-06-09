@@ -11,4 +11,5 @@ python-dotenv
 pytest
 httpx
 html2text
+duckduckgo-search
 
