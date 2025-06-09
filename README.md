@@ -1,4 +1,4 @@
-# Web Cat API
+# Web Cat MCP
 
 ## Introduction
 
