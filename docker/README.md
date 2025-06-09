@@ -113,19 +113,31 @@ docker logs <container_id> --tail 5
 
 ### Method 2: Run Tests (Recommended)
 
-#### Core Functionality Tests
+#### Unit Tests (No External Dependencies)
 ```bash
-# Run DuckDuckGo fallback tests
-python -m pytest test_duckduckgo_fallback.py -v
+# Run all unit tests (safe for CI/CD)
+python -m pytest -v -m "unit"
 
-# Run specific test
+# Run specific unit test
 python -m pytest test_duckduckgo_fallback.py::test_duckduckgo_fallback -v -s
 
 # Run with coverage
-python -m pytest test_duckduckgo_fallback.py --cov=mcp_server -v
+python -m pytest -m "unit" --cov=mcp_server -v
 ```
 
-#### API Integration Tests
+#### Integration Tests (Require Running Services)
+```bash
+# Run all integration tests (requires running MCP server)
+python -m pytest -v -m "integration"
+
+# Test complete MCP protocol flow (standalone)
+python test_mcp_protocol.py
+
+# Just check if server is running
+python test_mcp_protocol.py --check-health
+```
+
+#### API Tests (Direct API Calls)
 ```bash
 # Test Serper API directly (requires SERPER_API_KEY)
 python test_serper.py
@@ -134,13 +146,13 @@ python test_serper.py
 python -c "from mcp_server import fetch_duckduckgo_search_results; print(fetch_duckduckgo_search_results('test query', 1))"
 ```
 
-#### MCP Protocol Tests
+#### Run All Tests
 ```bash
-# Test complete MCP protocol flow
-python test_mcp_protocol.py
+# Run all tests except integration (CI-safe)
+python -m pytest -v -m "not integration"
 
-# Just check if server is running
-python test_mcp_protocol.py --check-health
+# Run absolutely everything (requires running server)
+python -m pytest -v
 ```
 
 ### Method 3: Test MCP Protocol Directly
@@ -326,4 +338,34 @@ python -m pytest test_duckduckgo_fallback.py --cov=mcp_server --cov-report=html
                        └──────────────────┘
 ```
 
-The server acts as an MCP-compliant bridge between AI models and web search capabilities, with automatic fallback to free services when premium APIs are unavailable. 
+The server acts as an MCP-compliant bridge between AI models and web search capabilities, with automatic fallback to free services when premium APIs are unavailable.
+
+## ✅ **Complete Test Suite Summary**
+
+### **Unit Tests (CI-Safe) ✅**
+- **`test_search_functions.py`** - Core search logic without external dependencies
+- **`test_serper.py`** - Direct Serper API testing (requires API key)
+- **`tests/test_mcp_server.py`** - Content processing and utility functions
+
+### **Integration Tests (Require Running Services) ✅**
+- **`test_mcp_protocol.py`** - Complete MCP streamable-http protocol flow
+- **`test_duckduckgo_fallback.py`** - Full server integration with DuckDuckGo
+
+### **CI/CD Strategy:**
+```bash
+# ✅ CI-Safe (runs in GitHub Actions)
+python -m pytest -v -m "not integration"
+
+# 🔧 Local Development (requires running server)
+python -m pytest -v -m "integration"
+
+# 🚀 Complete Test Suite
+python -m pytest -v
+```
+
+### **Test Organization:**
+- **Unit Tests**: Mock external dependencies, test logic only
+- **Integration Tests**: Require running MCP server, test end-to-end flow
+- **API Tests**: Test direct API integrations (Serper, DuckDuckGo)
+
+This ensures your CI pipeline runs fast and reliably while still providing comprehensive testing for local development! 🎯 
