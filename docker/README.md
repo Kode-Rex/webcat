@@ -111,10 +111,11 @@ curl -v http://localhost:8000/mcp/
 docker logs <container_id> --tail 5
 ```
 
-### Method 2: Run Pytest Tests (Recommended)
+### Method 2: Run Tests (Recommended)
 
+#### Core Functionality Tests
 ```bash
-# Run all tests
+# Run DuckDuckGo fallback tests
 python -m pytest test_duckduckgo_fallback.py -v
 
 # Run specific test
@@ -122,6 +123,24 @@ python -m pytest test_duckduckgo_fallback.py::test_duckduckgo_fallback -v -s
 
 # Run with coverage
 python -m pytest test_duckduckgo_fallback.py --cov=mcp_server -v
+```
+
+#### API Integration Tests
+```bash
+# Test Serper API directly (requires SERPER_API_KEY)
+python test_serper.py
+
+# Test DuckDuckGo API directly (no API key needed)
+python -c "from mcp_server import fetch_duckduckgo_search_results; print(fetch_duckduckgo_search_results('test query', 1))"
+```
+
+#### MCP Protocol Tests
+```bash
+# Test complete MCP protocol flow
+python test_mcp_protocol.py
+
+# Just check if server is running
+python test_mcp_protocol.py --check-health
 ```
 
 ### Method 3: Test MCP Protocol Directly
