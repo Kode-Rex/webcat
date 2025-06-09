@@ -52,6 +52,11 @@ import html2text
 import json
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+try:
+    from duckduckgo_search import DDGS
+except ImportError:
+    DDGS = None
+    logging.warning("duckduckgo-search not available. DuckDuckGo fallback will not work.")
 
 # Model definitions
 class SearchResult(BaseModel):
@@ -261,25 +266,80 @@ def process_search_results(results: List[Dict[str, Any]]) -> List[SearchResult]:
     
     return processed_results
 
+def fetch_duckduckgo_search_results(query: str, max_results: int = 3) -> List[Dict[str, Any]]:
+    """
+    Fetches search results from DuckDuckGo as a free fallback.
+    
+    Args:
+        query: The search query
+        max_results: Maximum number of results to return
+        
+    Returns:
+        A list of search result dictionaries
+    """
+    if not DDGS:
+        logging.error("DuckDuckGo search not available (library not installed)")
+        return []
+    
+    try:
+        logging.info(f"Using DuckDuckGo fallback search for: {query}")
+        
+        with DDGS() as ddgs:
+            # Get search results from DuckDuckGo
+            results = []
+            search_results = ddgs.text(query, max_results=max_results)
+            
+            for result in search_results:
+                # Convert DuckDuckGo result format to match Serper format
+                results.append({
+                    'title': result.get('title', 'Untitled'),
+                    'link': result.get('href', ''),
+                    'snippet': result.get('body', '')
+                })
+            
+            logging.info(f"DuckDuckGo returned {len(results)} results")
+            return results
+            
+    except Exception as e:
+        logging.error(f"Error fetching DuckDuckGo search results: {str(e)}")
+        return []
+
 # Create a search tool
 @mcp_server.tool(
     name="search",
-    description="Search the web for information",
+    description="Search the web for information using Serper API or DuckDuckGo fallback",
 )
 async def search_tool(query: str, ctx=None):
     """Search the web for information on a given query."""
     logging.info(f"Processing search request: {query}")
     
-    # Check if Serper API key is configured
-    if not SERPER_API_KEY:
-        logging.error("Server's SERPER_API_KEY is not configured")
-        return {"error": "Search API key not configured on the server."}
+    results = []
+    search_source = "Unknown"
     
-    # Fetch and process search results
-    results = fetch_search_results(query, SERPER_API_KEY)
+    # Try Serper API first if key is available
+    if SERPER_API_KEY:
+        logging.info("Using Serper API for search")
+        search_source = "Serper API"
+        results = fetch_search_results(query, SERPER_API_KEY)
+    
+    # Fall back to DuckDuckGo if no API key or no results from Serper
+    if not results:
+        if not SERPER_API_KEY:
+            logging.info("No Serper API key configured, using DuckDuckGo fallback")
+        else:
+            logging.warning("No results from Serper API, trying DuckDuckGo fallback")
+        
+        search_source = "DuckDuckGo (free fallback)"
+        results = fetch_duckduckgo_search_results(query)
+    
+    # Check if we got any results
     if not results:
         logging.warning(f"No search results found for query: {query}")
-        return {"error": "No search results found."}
+        return {
+            "error": "No search results found from any source.",
+            "query": query,
+            "search_source": search_source
+        }
     
     # Process the results
     processed_results = process_search_results(results)
@@ -287,6 +347,7 @@ async def search_tool(query: str, ctx=None):
     # Return formatted results
     return {
         "query": query,
+        "search_source": search_source,
         "results": [result.model_dump() for result in processed_results]
     }
 

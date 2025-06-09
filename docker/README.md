@@ -5,6 +5,7 @@ This directory contains the FastAPI-based Model Context Protocol (MCP) server th
 ## Features
 
 - Web search with content extraction
+- Free DuckDuckGo fallback when no API key is configured
 - Parallel processing of search results for faster response times
 - Serper API integration for high-quality search results
 - FastAPI-powered with OpenAPI documentation
@@ -20,7 +21,7 @@ This directory contains the FastAPI-based Model Context Protocol (MCP) server th
 
 - Docker
 - Docker Compose (optional, for local development)
-- Serper API key (required for search functionality)
+- Serper API key (optional - falls back to DuckDuckGo search if not provided)
 
 ## Code Structure
 
@@ -38,7 +39,7 @@ The MCP server can be configured using environment variables:
 
 ### Environment Variables
 
-- `SERPER_API_KEY`: Your Serper API key for web search functionality
+- `SERPER_API_KEY`: Your Serper API key for web search functionality (optional - falls back to DuckDuckGo if not provided)
 - `WEBCAT_API_KEY`: Your WebCAT API key for authenticating API requests to the /search endpoints
 - `PORT`: The port on which the MCP server will run (default: 8000)
 - `RATE_LIMIT_WINDOW`: Time window in seconds for rate limiting (default: 60)
@@ -62,8 +63,15 @@ docker-compose up
 When using Docker directly:
 
 ```bash
+# With Serper API (recommended for best results)
 docker run -p 9000:9000 \
   -e SERPER_API_KEY=your_serper_api_key \
+  -e WEBCAT_API_KEY=your_webcat_api_key \
+  -e PORT=9000 \
+  webcat:latest
+
+# With free DuckDuckGo fallback (no API key required)
+docker run -p 9000:9000 \
   -e WEBCAT_API_KEY=your_webcat_api_key \
   -e PORT=9000 \
   webcat:latest
