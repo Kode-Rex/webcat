@@ -6,12 +6,13 @@ import json
 import os
 import argparse
 import time
+import pytest
 
-def test_mcp_protocol(webcat_api_key=None):
+@pytest.mark.integration
+def test_mcp_protocol():
     """Test the MCP streamable-http protocol.
     
-    Args:
-        webcat_api_key: The WebCAT API key (set as environment variable for server).
+    This is an integration test that requires a running MCP server.
     """
     # Check if server is running
     base_url = "http://localhost:8000/mcp/"
@@ -41,16 +42,11 @@ def test_mcp_protocol(webcat_api_key=None):
     try:
         response = requests.post(base_url, headers=headers, json=init_payload)
         
-        if response.status_code != 200:
-            print(f"❌ Initialization failed: {response.status_code}")
-            print(response.text)
-            return False
+        assert response.status_code == 200, f"Initialization failed: {response.status_code} - {response.text}"
         
         # Extract session ID from headers
         session_id = response.headers.get('mcp-session-id')
-        if not session_id:
-            print("❌ No session ID returned in headers")
-            return False
+        assert session_id is not None, "No session ID returned in headers"
         
         print(f"✅ Session initialized! Session ID: {session_id}")
         
@@ -79,13 +75,11 @@ def test_mcp_protocol(webcat_api_key=None):
         
         response = requests.post(base_url, headers=headers_with_session, json=tools_payload)
         
-        if response.status_code != 200:
-            print(f"❌ Tools list failed: {response.status_code}")
-            print(response.text)
-            return False
+        assert response.status_code == 200, f"Tools list failed: {response.status_code} - {response.text}"
         
         # Parse SSE response
         response_text = response.text
+        tools_found = False
         if "event: message" in response_text:
             # Extract JSON from SSE format
             lines = response_text.split('\n')
@@ -97,7 +91,11 @@ def test_mcp_protocol(webcat_api_key=None):
                         print(f"✅ Found {len(tools)} tools:")
                         for tool in tools:
                             print(f"   - {tool['name']}: {tool['description']}")
+                        tools_found = True
+                        assert len(tools) >= 2, "Should have at least 2 tools (search and health_check)"
                         break
+        
+        assert tools_found, "No tools found in response"
         
         # Step 4: Test search tool
         print("\n4️⃣ Testing search tool...")
@@ -116,13 +114,11 @@ def test_mcp_protocol(webcat_api_key=None):
         
         response = requests.post(base_url, headers=headers_with_session, json=search_payload)
         
-        if response.status_code != 200:
-            print(f"❌ Search tool failed: {response.status_code}")
-            print(response.text)
-            return False
+        assert response.status_code == 200, f"Search tool failed: {response.status_code} - {response.text}"
         
         # Parse search results
         response_text = response.text
+        search_completed = False
         if "event: message" in response_text:
             lines = response_text.split('\n')
             for line in lines:
@@ -137,20 +133,24 @@ def test_mcp_protocol(webcat_api_key=None):
                         if search_data.get('results'):
                             first_result = search_data['results'][0]
                             print(f"   First result: {first_result.get('title', 'No title')}")
+                        
+                        # Assertions for search results
+                        assert 'search_source' in search_data, "Search response should include source"
+                        assert 'results' in search_data, "Search response should include results"
+                        assert len(search_data['results']) > 0, "Should return at least one search result"
+                        search_completed = True
                         break
         
+        assert search_completed, "Search did not complete successfully"
+        
         print("\n🎉 All MCP protocol tests passed!")
-        return True
         
     except requests.exceptions.RequestException as e:
-        print(f"❌ Request failed: {e}")
-        return False
+        pytest.skip(f"Server not available: {e}")
     except json.JSONDecodeError as e:
-        print(f"❌ JSON parsing failed: {e}")
-        return False
+        pytest.fail(f"JSON parsing failed: {e}")
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        return False
+        pytest.fail(f"Unexpected error: {e}")
 
 def check_server_health():
     """Check if the MCP server is running."""
@@ -176,4 +176,8 @@ if __name__ == "__main__":
             print("   docker run -d -p 8000:8000 -e WEBCAT_API_KEY='test-key' tmfrisinger/webcat:latest")
             exit(1)
         
-        test_mcp_protocol() 
+        # Run the pytest test directly
+        import subprocess
+        result = subprocess.run(['python', '-m', 'pytest', __file__ + '::test_mcp_protocol', '-v'], 
+                              capture_output=False)
+        exit(result.returncode) 
