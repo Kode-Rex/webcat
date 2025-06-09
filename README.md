@@ -23,6 +23,7 @@ The Model Context Protocol (MCP) server is a FastAPI-based implementation that p
  - **Content Extraction**: Utilizes the readability library for clean text extraction
  - **Text Processing**: Further processes extracted content for improved usability
  - **Search Functionality**: Integrates with Serper.dev to provide web search capabilities
+ - **Free Fallback**: Automatically falls back to DuckDuckGo search when no API key is configured
  - **MCP Compliance**: Follows standardized Model Context Protocol specifications
  - **Multiple API Styles**: Supports both Server-Sent Events (SSE) streaming and RESTful endpoints
  - **Rate Limiting**: Protects the API from abuse with configurable rate limits
@@ -42,8 +43,11 @@ The Model Context Protocol (MCP) server is a FastAPI-based implementation that p
 
 #### Running with Docker
 ```bash
-# Run with default settings
+# Run with Serper API (recommended for best results)
 docker run -p 8000:8000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:latest
+
+# Run with free DuckDuckGo fallback (no API key required)
+docker run -p 8000:8000 tmfrisinger/webcat:latest
 
 # Run on a custom port
 docker run -p 9000:9000 -e PORT=9000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:latest
@@ -86,7 +90,11 @@ python -m unittest test_mcp_server.py
 
 ## Limitations and Considerations
 - **Text-Based Content**: The APIs are optimized for text and image content and may not accurately represent other multimedia or dynamic web content.
-- **API Keys**: A Serper API key is required for search functionality
+- **Search Quality**: While DuckDuckGo fallback provides free search functionality, Serper API typically delivers higher quality and more comprehensive results
+
+## Search Sources
+- **Serper API**: Premium search results with high accuracy and comprehensive coverage (requires API key)
+- **DuckDuckGo Fallback**: Free search functionality with good quality results (no API key required)
 
 ## Contributing
 

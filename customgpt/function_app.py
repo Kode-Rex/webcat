@@ -11,6 +11,12 @@ from urllib.parse import urlparse
 import os
 from dotenv import load_dotenv
 
+try:
+    from duckduckgo_search import DDGS
+except ImportError:
+    DDGS = None
+    logging.warning("duckduckgo-search not available. DuckDuckGo fallback will not work.")
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -109,6 +115,44 @@ def try_fetch_with_backoff(url, headers, attempts=3, backoff_factor=2):
                 logging.error(f"All attempts failed: {str(e)}")
                 raise
 
+def fetch_duckduckgo_search_results(query, max_results=3):
+    """
+    Fetches search results from DuckDuckGo as a free fallback.
+    
+    Args:
+        query: The search query
+        max_results: Maximum number of results to return
+        
+    Returns:
+        A list of search result dictionaries or None if failed
+    """
+    if not DDGS:
+        logging.error("DuckDuckGo search not available (library not installed)")
+        return None
+    
+    try:
+        logging.info(f"Using DuckDuckGo fallback search for: {query}")
+        
+        with DDGS() as ddgs:
+            # Get search results from DuckDuckGo
+            results = []
+            search_results = ddgs.text(query, max_results=max_results)
+            
+            for result in search_results:
+                # Convert DuckDuckGo result format to match expected format
+                results.append({
+                    'title': result.get('title', 'Untitled'),
+                    'link': result.get('href', ''),
+                    'snippet': result.get('body', '')
+                })
+            
+            logging.info(f"DuckDuckGo returned {len(results)} results")
+            return results
+            
+    except Exception as e:
+        logging.error(f"Error fetching DuckDuckGo search results: {str(e)}")
+        return None
+
 @app.route(route="scrape", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def scrape(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -197,32 +241,62 @@ def search(req: func.HttpRequest) -> func.HttpResponse:
         
         if not query:
             return func.HttpResponse("Error: Missing search query", status_code=400)
-        
-        if not api_key:
-            return func.HttpResponse("Error: Serper API key not configured. Please set the SERPER_API_KEY environment variable or provide it in the request.", status_code=400)
             
         logging.info(f'search [{query}]')
         
-        # Call Serper.dev API to get search results
-        serper_url = "https://google.serper.dev/search"
-        headers = {
-            'X-API-KEY': api_key,
-            'Content-Type': 'application/json'
-        }
-        payload = {
-            'q': query,
-            'gl': 'us',
-            'hl': 'en'
-        }
+        top_results = []
+        search_source = "Unknown"
         
-        response = requests.post(serper_url, headers=headers, json=payload)
-        search_results = response.json()
+        # Try Serper API first if key is available
+        if api_key:
+            try:
+                logging.info("Using Serper API for search")
+                search_source = "Serper API"
+                
+                # Call Serper.dev API to get search results
+                serper_url = "https://google.serper.dev/search"
+                headers = {
+                    'X-API-KEY': api_key,
+                    'Content-Type': 'application/json'
+                }
+                payload = {
+                    'q': query,
+                    'gl': 'us',
+                    'hl': 'en'
+                }
+                
+                response = requests.post(serper_url, headers=headers, json=payload)
+                search_results = response.json()
+                
+                # Extract top 3 organic results
+                if 'organic' in search_results and search_results['organic']:
+                    top_results = search_results['organic'][:3]
+                    
+            except Exception as e:
+                logging.warning(f"Serper API failed: {str(e)}. Trying DuckDuckGo fallback.")
         
-        # Extract top 3 organic results
-        if 'organic' not in search_results or not search_results['organic']:
-            return func.HttpResponse("No search results found", status_code=404)
+        # Fall back to DuckDuckGo if no API key or no results from Serper
+        if not top_results:
+            if not api_key:
+                logging.info("No Serper API key configured, using DuckDuckGo fallback")
+            else:
+                logging.warning("No results from Serper API, trying DuckDuckGo fallback")
             
-        top_results = search_results['organic'][:3]
+            search_source = "DuckDuckGo (free fallback)"
+            duckduckgo_results = fetch_duckduckgo_search_results(query)
+            
+            if duckduckgo_results:
+                top_results = duckduckgo_results
+            else:
+                return func.HttpResponse(
+                    json.dumps({
+                        "error": "No search results found from any source",
+                        "query": query,
+                        "search_source": search_source
+                    }, ensure_ascii=False),
+                    mimetype="application/json",
+                    status_code=404
+                )
         results_with_content = []
         
         user_agent = random.choice(USER_AGENTS)
@@ -261,10 +335,11 @@ def search(req: func.HttpRequest) -> func.HttpResponse:
                     'content': f"Error: Failed to scrape content - {str(e)}"
                 })
         
-        # Include the query and result count in the response
+        # Include the query, search source, and result count in the response
         return func.HttpResponse(
             json.dumps({
                 "query": query,
+                "search_source": search_source,
                 "result_count": len(results_with_content),
                 "results": results_with_content
             }, ensure_ascii=False),
