@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - 'customgpt/**'  # Only trigger when files in customgpt directory change
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'customgpt/**'  # Only trigger when files in customgpt directory change
   workflow_dispatch:
 
 env:
@@ -20,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Python version
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -43,12 +48,14 @@ jobs:
   build:
     needs: test # Only run build if tests pass
     runs-on: ubuntu-latest
+    # Only run build and deploy on push to main, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python version
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -68,7 +75,7 @@ jobs:
           zip -r ../release.zip ./*
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: python-app
           path: release.zip
@@ -76,14 +83,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    # Only run deploy on push to main, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: python-app
 
