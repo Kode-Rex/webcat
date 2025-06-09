@@ -3,9 +3,9 @@
 
 import os
 import sys
-import json
 import tempfile
 import logging
+import pytest
 from pathlib import Path
 
 # Set up minimal environment variables for testing
@@ -25,8 +25,6 @@ def test_duckduckgo_fallback():
     
     try:
         # Import the modules from current directory
-        import sys
-        from pathlib import Path
         current_dir = Path(__file__).parent
         sys.path.insert(0, str(current_dir))
         from mcp_server import fetch_duckduckgo_search_results
@@ -55,10 +53,8 @@ def test_duckduckgo_fallback():
         print("\n✅ DuckDuckGo fallback test passed!")
         
     except ImportError as e:
-        import pytest
         pytest.fail(f"Import error: {str(e)}")
     except Exception as e:
-        import pytest
         pytest.fail(f"Test failed with error: {str(e)}")
     finally:
         # Restore original API key
@@ -67,8 +63,61 @@ def test_duckduckgo_fallback():
         else:
             os.environ.pop("SERPER_API_KEY", None)
 
-if __name__ == "__main__":
-    # For direct execution (not pytest)
-    import pytest
-    test_duckduckgo_fallback()
-    print("\n🎉 All tests passed! DuckDuckGo fallback is working correctly.") 
+def test_duckduckgo_search_structure():
+    """Test that DuckDuckGo search returns properly structured results."""
+    # Clear API key to force DuckDuckGo usage
+    original_serper_key = os.environ.get("SERPER_API_KEY", "")
+    os.environ["SERPER_API_KEY"] = ""
+    
+    try:
+        current_dir = Path(__file__).parent
+        sys.path.insert(0, str(current_dir))
+        from mcp_server import fetch_duckduckgo_search_results
+        
+        results = fetch_duckduckgo_search_results("Python programming", max_results=1)
+        
+        assert isinstance(results, list), "Results should be a list"
+        if results:  # If we got results
+            result = results[0]
+            assert isinstance(result, dict), "Each result should be a dictionary"
+            
+            # Check required fields
+            required_fields = ['title', 'link', 'snippet']
+            for field in required_fields:
+                assert field in result, f"Result should contain '{field}' field"
+                assert isinstance(result[field], str), f"'{field}' should be a string"
+                assert len(result[field]) > 0, f"'{field}' should not be empty"
+    
+    finally:
+        # Restore original API key
+        if original_serper_key:
+            os.environ["SERPER_API_KEY"] = original_serper_key
+        else:
+            os.environ.pop("SERPER_API_KEY", None)
+
+def test_duckduckgo_error_handling():
+    """Test that DuckDuckGo search handles errors gracefully."""
+    # Clear API key to force DuckDuckGo usage
+    original_serper_key = os.environ.get("SERPER_API_KEY", "")
+    os.environ["SERPER_API_KEY"] = ""
+    
+    try:
+        current_dir = Path(__file__).parent
+        sys.path.insert(0, str(current_dir))
+        from mcp_server import fetch_duckduckgo_search_results
+        
+        # Test with empty query
+        results = fetch_duckduckgo_search_results("", max_results=1)
+        assert isinstance(results, list), "Should return empty list for empty query"
+        
+        # Test with very long query (should not crash)
+        long_query = "a" * 1000
+        results = fetch_duckduckgo_search_results(long_query, max_results=1)
+        assert isinstance(results, list), "Should handle long queries gracefully"
+    
+    finally:
+        # Restore original API key
+        if original_serper_key:
+            os.environ["SERPER_API_KEY"] = original_serper_key
+        else:
+            os.environ.pop("SERPER_API_KEY", None) 
