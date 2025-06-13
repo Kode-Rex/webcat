@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for the MCP streamable-http protocol."""
+"""Test script for the MCP SSE protocol."""
 
 import requests
 import json
@@ -10,7 +10,7 @@ import pytest
 
 @pytest.mark.integration
 def test_mcp_protocol():
-    """Test the MCP streamable-http protocol.
+    """Test the MCP SSE protocol.
     
     This is an integration test that requires a running MCP server.
     """
@@ -163,7 +163,7 @@ def check_server_health():
         return False
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Test MCP streamable-http protocol')
+    parser = argparse.ArgumentParser(description='Test MCP SSE protocol')
     parser.add_argument('--check-health', action='store_true',
                         help="Only check if server is running")
     args = parser.parse_args()
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     else:
         if not check_server_health():
             print("\n💡 Start the server first:")
-            print("   docker run -d -p 8000:8000 -e WEBCAT_API_KEY='test-key' tmfrisinger/webcat:latest")
+            print("   docker run -d -p 8000:8000 tmfrisinger/webcat:latest")
             exit(1)
         
         # Run the pytest test directly

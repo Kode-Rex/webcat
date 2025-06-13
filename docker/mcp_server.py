@@ -68,24 +68,11 @@ class SearchResult(BaseModel):
 
 # Configure API keys
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
-WEBCAT_API_KEY = os.environ.get("WEBCAT_API_KEY", "")
-
-# Improved logging for API keys
-if WEBCAT_API_KEY:
-    key_length = len(WEBCAT_API_KEY)
-    masked_key = WEBCAT_API_KEY[:4] + "*" * (key_length - 8) + WEBCAT_API_KEY[-4:] if key_length > 8 else "****"
-    logging.info(f"WEBCAT_API_KEY is set (masked: {masked_key})")
-else:
-    logging.warning("WEBCAT_API_KEY is not set! Authentication will not work.")
 
 logging.info(f"Using SERPER API key from environment: {'Set' if SERPER_API_KEY else 'Not set'}")
 
-# Create FastMCP instance
-mcp_server = FastMCP(
-    name="WebCat Search",
-    description="A server providing web search capabilities to models following the MCP protocol",
-    authentication_key=WEBCAT_API_KEY
-)
+# Create FastMCP instance (no authentication required)
+mcp_server = FastMCP("WebCat Search")
 
 # Utility functions
 def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
@@ -364,9 +351,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logging.info(f"Starting FastMCP server on port {port}")
     
-    # Run the server with proper streamable-http configuration
+    # Run the server with SSE transport for LiteLLM compatibility
     mcp_server.run(
-        transport="streamable-http",
+        transport="sse",
         host="0.0.0.0",
         port=port,
         path="/mcp"  # Explicit path for MCP endpoint

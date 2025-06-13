@@ -16,10 +16,8 @@ def debug_search():
     # Get API key from environment
     api_key = os.environ.get("SERPER_API_KEY", "")
     if not api_key:
-        api_key = os.environ.get("WEBCAT_API_KEY", "")
-        
-    if not api_key:
-        print("❌ No API key found in environment variables.")
+        print("❌ No Serper API key found in environment variables.")
+        print("💡 Set SERPER_API_KEY to use premium search, or use DuckDuckGo fallback instead.")
         return
         
     # Mask the key for display
