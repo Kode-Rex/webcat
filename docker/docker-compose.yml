@@ -9,7 +9,6 @@ services:
       - "${PORT:-8000}:${PORT:-8000}"
     environment:
       - SERPER_API_KEY=${SERPER_API_KEY}
-      - WEBCAT_API_KEY=${WEBCAT_API_KEY}
       - PORT=${PORT:-8000}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_DIR=/var/log/webcat

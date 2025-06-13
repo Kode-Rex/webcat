@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 
 # Set up minimal environment variables for testing
 os.environ["LOG_DIR"] = tempfile.gettempdir()
-os.environ["WEBCAT_API_KEY"] = "test_key_for_testing"
+# No API key needed for testing
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
