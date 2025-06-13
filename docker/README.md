@@ -26,19 +26,11 @@ This directory contains the **FastMCP-based Model Context Protocol (MCP) server*
 # Build the image
 ./build.sh
 
-# Generate a secure API key (choose one method)
-export WEBCAT_API_KEY="sk-webcat-$(openssl rand -hex 32)"
-# OR use your own secure string
-export WEBCAT_API_KEY="sk-webcat-my-secure-key-2024"
-
-# Run with free DuckDuckGo fallback (no external API key needed)
-docker run -p 8000:8000 \
-  -e WEBCAT_API_KEY="$WEBCAT_API_KEY" \
-  webcat:latest
+# Run with free DuckDuckGo fallback (no API keys needed)
+docker run -p 8000:8000 webcat:latest
 
 # Or run with premium Serper API
 docker run -p 8000:8000 \
-  -e WEBCAT_API_KEY="$WEBCAT_API_KEY" \
   -e SERPER_API_KEY=your_serper_api_key \
   webcat:latest
 ```
@@ -46,9 +38,6 @@ docker run -p 8000:8000 \
 ### 2. Using Docker Compose
 
 ```bash
-# Generate your secure API key
-export WEBCAT_API_KEY="sk-webcat-$(openssl rand -hex 32)"
-
 # Optionally set Serper API key for premium search
 export SERPER_API_KEY=your_serper_api_key  # Optional
 
@@ -60,27 +49,19 @@ docker-compose up
 
 ### Environment Variables
 
-- `WEBCAT_API_KEY`: **Required** - Your custom API key for authentication (user-generated security token)
 - `SERPER_API_KEY`: **Optional** - Serper API key for premium search (falls back to DuckDuckGo if not set)
 - `PORT`: Port to run the server on (default: 8000)
 - `LOG_LEVEL`: Logging level (default: INFO)
 - `LOG_DIR`: Directory for log files (default: /tmp)
 
-### API Key Security
+### Simplified Setup
 
-The `WEBCAT_API_KEY` is a **user-generated security token** that you create to protect your WebCat server:
+WebCat now runs without authentication requirements, making it easier to integrate:
 
-- 🔐 **You generate it** - Create any secure string (e.g., `sk-webcat-your-secret-key-123`)
-- 🛡️ **Authentication layer** - Prevents unauthorized access to your search server
-- 🔑 **Required for all requests** - MCP clients must provide this key to use the server
-- 💡 **Best practices**: Use a long, random string with prefixes like `sk-webcat-` for clarity
-
-Example secure keys:
-```bash
-export WEBCAT_API_KEY="sk-webcat-$(openssl rand -hex 32)"
-export WEBCAT_API_KEY="webcat-prod-$(date +%s)-$(openssl rand -hex 16)"
-export WEBCAT_API_KEY="sk-webcat-my-secure-key-2024"
-```
+- 🚀 **No API key required** - Simply run the container and start using
+- 🔓 **Open access** - Perfect for development and trusted environments
+- ⚡ **Quick setup** - Get started in seconds without key generation
+- 🔧 **Easy integration** - Works seamlessly with any MCP client
 
 ## MCP Protocol Endpoints
 
@@ -157,7 +138,7 @@ python -m pytest -v
 
 ### Method 3: Test MCP Protocol Directly
 
-**⚠️ Note**: `streamable-http` requires proper MCP initialization flow. Here's the correct sequence:
+**⚠️ Note**: The server now uses SSE transport for better LiteLLM compatibility. Here's the correct sequence:
 
 #### Step 1: Initialize MCP Session
 ```bash
@@ -204,9 +185,7 @@ Use with Claude Desktop or other MCP-compatible clients:
   "mcpServers": {
     "webcat": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", 
-               "-e", "WEBCAT_API_KEY=your_key",
-               "webcat:latest"]
+      "args": ["run", "-i", "--rm", "webcat:latest"]
     }
   }
 }
@@ -348,7 +327,7 @@ The server acts as an MCP-compliant bridge between AI models and web search capa
 - **`tests/test_mcp_server.py`** - Content processing and utility functions
 
 ### **Integration Tests (Require Running Services) ✅**
-- **`test_mcp_protocol.py`** - Complete MCP streamable-http protocol flow
+- **`test_mcp_protocol.py`** - Complete MCP SSE protocol flow
 - **`test_duckduckgo_fallback.py`** - Full server integration with DuckDuckGo
 
 ### **CI/CD Strategy:**
