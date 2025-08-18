@@ -277,7 +277,6 @@ def scrape_with_images(req: func.HttpRequest) -> func.HttpResponse:
 @app.route(route="search", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def search(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        global SERPER_API_KEY
         data = req.get_json()
         query = data.get("query")
 

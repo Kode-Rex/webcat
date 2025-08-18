@@ -39,7 +39,7 @@ jobs:
         run: isort --settings-path pyproject.toml --check-only --diff .
 
       - name: Lint with flake8
-        run: flake8 --config pyproject.toml .
+        run: flake8 .
 
       - name: Type check with mypy
         run: mypy --config-file pyproject.toml .
