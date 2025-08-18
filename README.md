@@ -21,6 +21,8 @@ docker run -p 8000:8000 tmfrisinger/webcat:latest
 open http://localhost:8000/client
 ```
 
+![WebCat Demo Client](assets/webcat-demo-client.png)
+
 The demo client provides an interactive interface to test web searches, view real-time results, and explore all WebCat features!
 
 ## Components
