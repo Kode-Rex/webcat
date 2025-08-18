@@ -3,7 +3,7 @@
 # This script activates the virtual environment and runs the tests
 
 # Move to the src directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 # Activate virtual environment if it exists
 if [ -d ".venv" ]; then
@@ -20,8 +20,8 @@ SRC_PATH=$(pwd)
 
 # Run the tests with proper Python path
 echo "Running WebCat tests..."
-cd ..
+(cd .. && echo "Back to parent directory")
 PYTHONPATH="$SRC_PATH:$PYTHONPATH" python -m pytest -v tests/
 
 # Return the exit code from the test command
-exit $? 
+exit $?

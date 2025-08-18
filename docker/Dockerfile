@@ -25,4 +25,4 @@ EXPOSE ${PORT}
 EXPOSE $((${PORT} + 1))
 
 # Command to run the application
-CMD python cli.py --mode ${WEBCAT_MODE:-demo} --host 0.0.0.0 --port ${PORT} 
+CMD python cli.py --mode ${WEBCAT_MODE:-demo} --host 0.0.0.0 --port ${PORT}

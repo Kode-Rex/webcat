@@ -32,4 +32,4 @@ echo "docker push ${LATEST}"
 # Uncomment the following lines if you want to automatically push to a registry
 # docker push ${TAG}
 # docker push ${LATEST}
-# echo "Docker image pushed successfully!" 
+# echo "Docker image pushed successfully!"

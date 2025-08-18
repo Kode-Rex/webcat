@@ -417,9 +417,9 @@
             // Create a new EventSource for the search operation
             const baseUrl = document.getElementById('serverUrl').value.trim();
             const searchUrl = `${baseUrl}?operation=search&query=${encodeURIComponent(query)}&max_results=${maxResults}`;
-            
+
             const searchEventSource = new EventSource(searchUrl);
-            
+
             searchEventSource.onopen = function(event) {
                 log('🔗 Search stream connected', 'info');
             };
@@ -485,20 +485,20 @@
             // Make a simple fetch request to the health endpoint
             const baseUrl = document.getElementById('serverUrl').value.trim().replace('/sse', '');
             const healthUrl = `${baseUrl}/health`;
-            
+
             fetch(healthUrl)
                 .then(response => response.json())
                 .then(data => {
                     log('✅ Health check completed successfully', 'success');
-                    
+
                     // Show health-specific status message
                     const healthStatus = data.status || 'unknown';
                     updateStatus(`💗 Health Check Complete - Server is ${healthStatus}`, 'connected');
-                    
+
                     // Display the health check results
                     displayResponse(JSON.stringify(data, null, 2), '💗 Health Check Results');
                     currentOperation = null;
-                    
+
                     // Return to normal connected status after 3 seconds
                     setTimeout(() => {
                         if (isConnected && currentOperation === null) {
@@ -511,7 +511,7 @@
                     updateStatus('❌ Health Check Failed - Still connected to server', 'connected');
                     displayResponse(JSON.stringify({error: error.message}, null, 2), '❌ Health Check Error');
                     currentOperation = null;
-                    
+
                     // Return to normal connected status after 3 seconds
                     setTimeout(() => {
                         if (isConnected && currentOperation === null) {
