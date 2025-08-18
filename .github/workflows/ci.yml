@@ -54,10 +54,16 @@ jobs:
       - name: Install dependencies
         run: make install-dev
 
+      - name: Run tests (fast)
+        if: github.event_name == 'push'
+        run: make test
+
       - name: Run tests with coverage
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
         run: make test-coverage
 
       - name: Upload coverage to Codecov
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
         uses: codecov/codecov-action@v4
         with:
           file: docker/coverage.xml
@@ -66,16 +72,17 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload coverage reports
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: coverage-reports-${{ matrix.python-version }}
           path: docker/htmlcov/
 
-  # Security Scan
+  # Security Scan (only on PRs and scheduled runs)
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
 
     steps:
       - name: Checkout code
@@ -102,10 +109,11 @@ jobs:
             safety-report.json
             bandit-security.json
 
-  # Dependency Check
+  # Dependency Check (only on PRs and scheduled runs)
   dependencies:
     name: Dependency Check
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
 
     steps:
       - name: Checkout code
