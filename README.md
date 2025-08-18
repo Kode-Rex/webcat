@@ -72,15 +72,6 @@ docker run -p 9000:9000 -e PORT=9000 -e SERPER_API_KEY=your_key tmfrisinger/webc
 docker run -p 8000:8000 -e SERPER_API_KEY=your_key -e RATE_LIMIT_WINDOW=60 -e RATE_LIMIT_MAX_REQUESTS=10 tmfrisinger/webcat:2.2.0
 ```
 
-#### Building the Docker Image
-```bash
-# Navigate to the docker directory
-cd docker
-
-# Run the build script
-./build.sh
-```
-
 For more detailed Docker information, see the `docker/README.md` file.
 
 #### Demo Client & Endpoints

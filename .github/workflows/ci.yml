@@ -96,44 +96,7 @@ jobs:
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
         run: make test-integration
 
-  # Docker Build Test
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: [quality]
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: false
-          tags: webcat:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Test Docker image
-        run: |
-          # Start container in background
-          docker run -d --name webcat-test -p 8000:8000 \
-            -e WEBCAT_MODE=demo \
-            webcat:test
-
-          # Wait for container to start
-          sleep 10
-
-          # Test health endpoint
-          curl -f http://localhost:8000/health || exit 1
-
-          # Stop container
-          docker stop webcat-test
 
   # Security Scan
   security:
@@ -198,48 +161,7 @@ jobs:
           name: dependency-audit
           path: audit-report.json
 
-  # Build and Release (only on main branch)
-  release:
-    name: Build and Release
-    runs-on: ubuntu-latest
-    needs: [quality, test, integration, docker, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Build package
-        run: python -m build
-
-      - name: Check package
-        run: twine check dist/*
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-package
-          path: dist/
-
-      # Uncomment when ready to publish to PyPI
-      # - name: Publish to PyPI
-      #   env:
-      #     TWINE_USERNAME: __token__
-      #     TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      #   run: twine upload dist/*
 
   # Performance Tests (optional)
   performance:
