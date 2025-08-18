@@ -1,0 +1,41 @@
+name: Dependabot Auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge Dependabot PRs
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title;
+
+            // Check if it's a patch or minor update
+            const isPatch = title.includes('patch') || /bump .* from .* to .*\.\d+\.\d+$/i.test(title);
+            const isMinor = title.includes('minor') || /bump .* from .* to .*\.\d+\.\d+$/i.test(title);
+
+            return isPatch || isMinor ? 'true' : 'false';
+
+      - name: Enable auto-merge for Dependabot PRs
+        if: steps.pr-info.outputs.result == 'true'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

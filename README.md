@@ -9,6 +9,22 @@ Web Cat is a collection of Python-based APIs designed to enhance AI models with 
 
 Both implementations are designed to responsibly scrape and process website content, making it easy to integrate web content into AI applications like ChatGPT through Custom GPTs.
 
+## Quick Start
+
+**🚀 Try WebCat in 30 seconds:**
+
+```bash
+# Run the demo server
+docker run -p 8000:8000 tmfrisinger/webcat:latest
+
+# Open the demo client in your browser
+open http://localhost:8000/client
+```
+
+![WebCat Demo Client](assets/webcat-demo-client.png)
+
+The demo client provides an interactive interface to test web searches, view real-time results, and explore all WebCat features!
+
 ## Components
 
 ### Azure Functions API
@@ -56,16 +72,19 @@ docker run -p 9000:9000 -e PORT=9000 -e SERPER_API_KEY=your_key tmfrisinger/webc
 docker run -p 8000:8000 -e SERPER_API_KEY=your_key -e RATE_LIMIT_WINDOW=60 -e RATE_LIMIT_MAX_REQUESTS=10 tmfrisinger/webcat:2.2.0
 ```
 
-#### Building the Docker Image
-```bash
-# Navigate to the docker directory
-cd docker
-
-# Run the build script
-./build.sh
-```
-
 For more detailed Docker information, see the `docker/README.md` file.
+
+#### Demo Client & Endpoints
+
+Once the server is running, you can access:
+
+- **🎨 Demo Client**: [http://localhost:8000/client](http://localhost:8000/client) - Interactive web interface for testing
+- **💗 Health Check**: [http://localhost:8000/health](http://localhost:8000/health) - Server health status
+- **📊 Server Status**: [http://localhost:8000/status](http://localhost:8000/status) - Detailed server information
+- **🔗 SSE Endpoint**: [http://localhost:8000/sse](http://localhost:8000/sse) - Server-Sent Events for real-time search
+- **🛠️ FastMCP**: [http://localhost:8000/mcp](http://localhost:8000/mcp) - MCP protocol endpoint
+
+The demo client provides a user-friendly interface to test web searches with real-time results, health monitoring, and connection management.
 
 ## Configuration
 
