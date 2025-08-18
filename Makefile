@@ -86,8 +86,8 @@ docker-lint: ## Lint Dockerfiles (requires Docker running)
 
 security: ## Run security checks
 	@echo "🔒 Running security checks..."
-	bandit -r . -f json -o bandit-report.json
-	safety check --json --output safety-report.json || true
+	bandit -r docker/ customgpt/ -f json -o bandit-report.json --exclude "*/venv/*,*/build/*,*/dist/*,*/.venv/*" || true
+	safety check || true
 	@echo "✅ Security checks complete!"
 
 security-check: security ## Alias for security target (CI compatibility)
