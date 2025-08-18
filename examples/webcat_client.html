@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐱 WebCat MCP - Demo Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .connection-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, select, button {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input, select {
+            width: 100%;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            white-space: nowrap;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .logs {
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #1e1e1e;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-entry.success { color: #28a745; }
+        .log-entry.error { color: #dc3545; }
+        .log-entry.info { color: #17a2b8; }
+        .log-entry.warning { color: #ffc107; }
+        .response-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .response-display pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .connection-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .search-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .search-options {
+                grid-template-columns: 1fr;
+            }
+            .connection-controls {
+                flex-direction: column;
+            }
+        }
+        .results-summary {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .result-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .result-title {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        .result-url {
+            font-size: 12px;
+            color: #6c757d;
+            font-family: monospace;
+            margin-bottom: 8px;
+        }
+        .result-snippet {
+            color: #495057;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .result-content {
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐱 WebCat MCP - Demo Client</h1>
+        <p>Connect to your FastMCP WebCat server via Server-Sent Events</p>
+        <p><small>Web search with content extraction • Serper API + DuckDuckGo fallback</small></p>
+    </div>
+
+    <div class="container">
+        <h2>🔗 Server Connection</h2>
+
+        <div class="input-group">
+            <label for="serverUrl">FastMCP Server URL:</label>
+            <input type="text" id="serverUrl" value="http://localhost:8000/sse" placeholder="http://localhost:8000/sse">
+        </div>
+
+        <div class="search-options">
+            <div class="input-group">
+                <label for="queryInput">Search Query:</label>
+                <input type="text" id="queryInput" value="Python web scraping best practices" placeholder="Enter your search query">
+            </div>
+            <div class="input-group">
+                <label for="maxResults">Max Results:</label>
+                <select id="maxResults">
+                    <option value="3">3 results</option>
+                    <option value="5" selected>5 results</option>
+                    <option value="10">10 results</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="connection-controls">
+            <button id="connectBtn" onclick="connect()">🔌 Connect to Server</button>
+            <button id="searchBtn" onclick="performSearch()" disabled>🔍 Search Web</button>
+            <button id="healthBtn" onclick="checkHealth()" disabled>💗 Health Check</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>❌ Disconnect</button>
+            <button onclick="clearLogs()">🗑️ Clear Logs</button>
+        </div>
+
+        <div id="connectionStatus" class="status disconnected">
+            🔴 Not Connected - Click Connect to start
+        </div>
+
+        <div class="connection-info" id="connectionInfo" style="display: none;">
+            Connection Details: <span id="connectionDetails"></span>
+        </div>
+    </div>
+
+    <div class="container" id="responseContainer" style="display: none;">
+        <h2>📊 Search Results</h2>
+        <div id="resultsDisplay"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 Real-Time Logs</h2>
+        <div id="logs" class="logs">
+            <div class="log-entry info">[Ready] WebCat SSE Client initialized - Click Connect to start</div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let isConnected = false;
+        let currentOperation = null;
+
+        function updateStatus(message, status) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${status}`;
+        }
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function updateButtonStates(connected) {
+            document.getElementById('connectBtn').disabled = connected;
+            document.getElementById('searchBtn').disabled = !connected;
+            document.getElementById('healthBtn').disabled = !connected;
+            document.getElementById('disconnectBtn').disabled = !connected;
+        }
+
+        function connect() {
+            if (isConnected) {
+                log('Already connected to server', 'warning');
+                return;
+            }
+
+            const baseUrl = document.getElementById('serverUrl').value.trim();
+
+            if (!baseUrl) {
+                log('Please enter a server URL', 'error');
+                return;
+            }
+
+            connectToUrl(baseUrl);
+        }
+
+        function connectToUrl(url) {
+            updateStatus('🟡 Connecting to WebCat stream...', 'connecting');
+            log(`Attempting to connect to: ${url}`, 'info');
+
+            try {
+                // Connect to the SSE endpoint
+                eventSource = new EventSource(url);
+
+                eventSource.onopen = function(event) {
+                    isConnected = true;
+                    updateStatus('🟢 Connected to FastMCP server', 'connected');
+                    log('✅ Successfully connected to FastMCP server', 'success');
+
+                    updateButtonStates(true);
+
+                    const connectionInfo = document.getElementById('connectionInfo');
+                    const connectionDetails = document.getElementById('connectionDetails');
+                    connectionInfo.style.display = 'block';
+                    connectionDetails.textContent = `Connected to ${url}`;
+                };
+
+                eventSource.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+
+                        // Skip heartbeat logging
+                        if (message.type === 'heartbeat') return;
+
+                        log(`📨 ${message.type}: ${message.message || 'Data received'}`, 'info');
+
+                        // Handle different message types
+                        switch (message.type) {
+                            case 'connection':
+                                displayResponse(JSON.stringify(message, null, 2), '🔗 Connection Status');
+                                break;
+                            case 'status':
+                                updateStatus(`🔄 ${message.message}`, 'connecting');
+                                break;
+                            case 'data':
+                                if (currentOperation === 'search') {
+                                    displaySearchResults(message.data);
+                                } else {
+                                    displayResponse(JSON.stringify(message.data, null, 2), '📊 WebCat Data');
+                                }
+                                break;
+                            case 'complete':
+                                updateStatus(`✅ ${message.message}`, 'connected');
+                                log('🎉 WebCat operation completed successfully!', 'success');
+                                currentOperation = null;
+                                break;
+                            case 'error':
+                                log(`❌ Error: ${message.message}`, 'error');
+                                displayResponse(JSON.stringify(message, null, 2), '❌ Error');
+                                currentOperation = null;
+                                break;
+                            default:
+                                displayResponse(JSON.stringify(message, null, 2), '📡 SSE Message');
+                        }
+                    } catch (e) {
+                        log(`❌ Failed to parse message: ${event.data}`, 'error');
+                        displayResponse(event.data, '📡 Raw SSE Message');
+                    }
+                };
+
+                eventSource.onerror = function(event) {
+                    log('❌ Connection error occurred', 'error');
+                    if (isConnected) {
+                        updateStatus('🔴 Connection lost', 'disconnected');
+                        disconnect();
+                    } else {
+                        updateStatus('🔴 Failed to connect', 'disconnected');
+                        eventSource.close();
+                        resetConnectionState();
+                    }
+                };
+
+            } catch (error) {
+                log(`❌ Failed to connect: ${error.message}`, 'error');
+                updateStatus('🔴 Connection failed', 'disconnected');
+            }
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+
+            isConnected = false;
+            currentOperation = null;
+            updateStatus('🔴 Disconnected from server', 'disconnected');
+            log('🔌 Disconnected from FastMCP server', 'warning');
+
+            resetConnectionState();
+        }
+
+        function resetConnectionState() {
+            updateButtonStates(false);
+            document.getElementById('connectionInfo').style.display = 'none';
+        }
+
+        function performSearch() {
+            if (!isConnected) {
+                log('❌ Not connected to server', 'error');
+                return;
+            }
+
+            const query = document.getElementById('queryInput').value.trim();
+            const maxResults = document.getElementById('maxResults').value;
+
+            if (!query) {
+                log('Please enter a search query', 'error');
+                return;
+            }
+
+            currentOperation = 'search';
+            log(`🔍 Performing search: "${query}" (max ${maxResults} results)`, 'info');
+            updateStatus('🔄 Searching...', 'connecting');
+
+            // Create a new EventSource for the search operation
+            const baseUrl = document.getElementById('serverUrl').value.trim();
+            const searchUrl = `${baseUrl}?operation=search&query=${encodeURIComponent(query)}&max_results=${maxResults}`;
+
+            const searchEventSource = new EventSource(searchUrl);
+
+            searchEventSource.onopen = function(event) {
+                log('🔗 Search stream connected', 'info');
+            };
+
+            searchEventSource.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+
+                    // Skip heartbeat logging
+                    if (message.type === 'heartbeat') return;
+
+                    log(`📨 Search ${message.type}: ${message.message || 'Data received'}`, 'info');
+
+                    // Handle different message types
+                    switch (message.type) {
+                        case 'connection':
+                            log('🔗 Search operation started', 'info');
+                            break;
+                        case 'status':
+                            updateStatus(`🔄 ${message.message}`, 'connecting');
+                            break;
+                        case 'data':
+                            displaySearchResults(message.data);
+                            break;
+                        case 'complete':
+                            updateStatus('🟢 Connected to FastMCP server', 'connected');
+                            log('🎉 Search completed successfully!', 'success');
+                            currentOperation = null;
+                            searchEventSource.close();
+                            break;
+                        case 'error':
+                            log(`❌ Search error: ${message.message}`, 'error');
+                            updateStatus('🟢 Connected to FastMCP server', 'connected');
+                            displayResponse(JSON.stringify(message, null, 2), '❌ Search Error');
+                            currentOperation = null;
+                            searchEventSource.close();
+                            break;
+                    }
+                } catch (e) {
+                    log(`❌ Failed to parse search message: ${event.data}`, 'error');
+                    searchEventSource.close();
+                }
+            };
+
+            searchEventSource.onerror = function(event) {
+                log('❌ Search stream error occurred', 'error');
+                updateStatus('🟢 Connected to FastMCP server', 'connected');
+                currentOperation = null;
+                searchEventSource.close();
+            };
+        }
+
+        function checkHealth() {
+            if (!isConnected) {
+                log('❌ Not connected to server', 'error');
+                return;
+            }
+
+            currentOperation = 'health';
+            log('💗 Checking server health...', 'info');
+            updateStatus('🔄 Checking health...', 'connecting');
+
+            // Make a simple fetch request to the health endpoint
+            const baseUrl = document.getElementById('serverUrl').value.trim().replace('/sse', '');
+            const healthUrl = `${baseUrl}/health`;
+
+            fetch(healthUrl)
+                .then(response => response.json())
+                .then(data => {
+                    log('✅ Health check completed successfully', 'success');
+
+                    // Show health-specific status message
+                    const healthStatus = data.status || 'unknown';
+                    updateStatus(`💗 Health Check Complete - Server is ${healthStatus}`, 'connected');
+
+                    // Display the health check results
+                    displayResponse(JSON.stringify(data, null, 2), '💗 Health Check Results');
+                    currentOperation = null;
+
+                    // Return to normal connected status after 3 seconds
+                    setTimeout(() => {
+                        if (isConnected && currentOperation === null) {
+                            updateStatus('🟢 Connected to FastMCP server', 'connected');
+                        }
+                    }, 3000);
+                })
+                .catch(error => {
+                    log(`❌ Health check failed: ${error.message}`, 'error');
+                    updateStatus('❌ Health Check Failed - Still connected to server', 'connected');
+                    displayResponse(JSON.stringify({error: error.message}, null, 2), '❌ Health Check Error');
+                    currentOperation = null;
+
+                    // Return to normal connected status after 3 seconds
+                    setTimeout(() => {
+                        if (isConnected && currentOperation === null) {
+                            updateStatus('🟢 Connected to FastMCP server', 'connected');
+                        }
+                    }, 3000);
+                });
+        }
+
+        function displayResponse(data, title) {
+            // This function is for raw data display
+            const container = document.getElementById('responseContainer');
+            const display = document.getElementById('resultsDisplay');
+
+            try {
+                const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+                const content = `<div class="result-item">
+                    <div class="result-title">${title}</div>
+                    <pre>${JSON.stringify(parsed, null, 2)}</pre>
+                </div>`;
+                display.innerHTML += content;
+            } catch (e) {
+                const content = `<div class="result-item">
+                    <div class="result-title">${title}</div>
+                    <pre>${data}</pre>
+                </div>`;
+                display.innerHTML += content;
+            }
+
+            container.style.display = 'block';
+        }
+
+        function displaySearchResults(data) {
+            const container = document.getElementById('responseContainer');
+            const display = document.getElementById('resultsDisplay');
+
+            if (data.error) {
+                display.innerHTML = `<div class="result-item">
+                    <div class="result-title">❌ Search Error</div>
+                    <p>${data.error}</p>
+                </div>`;
+                container.style.display = 'block';
+                return;
+            }
+
+            let html = `<div class="results-summary">
+                <h3>🔍 Search Results for: "${data.query}"</h3>
+                <p><strong>Source:</strong> ${data.search_source || 'Unknown'}</p>
+                <p><strong>Results:</strong> ${data.results ? data.results.length : 0}</p>
+            </div>`;
+
+            if (data.results && data.results.length > 0) {
+                data.results.forEach((result, index) => {
+                    html += `<div class="result-item">
+                        <div class="result-title">${index + 1}. ${result.title || 'Untitled'}</div>
+                        <div class="result-url">${result.url || 'No URL'}</div>
+                        <div class="result-snippet">"${result.snippet || 'No description available'}"</div>
+                        ${result.content ? `<div class="result-content">
+                            <strong>Content Preview:</strong>
+                            <pre>${result.content.substring(0, 500)}${result.content.length > 500 ? '...' : ''}</pre>
+                        </div>` : ''}
+                    </div>`;
+                });
+            } else {
+                html += `<div class="result-item">
+                    <div class="result-title">No results found</div>
+                    <p>Try a different search query or check your connection.</p>
+                </div>`;
+            }
+
+            display.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        function clearLogs() {
+            const logs = document.getElementById('logs');
+            logs.innerHTML = '<div class="log-entry info">[Cleared] Logs cleared</div>';
+
+            const responseContainer = document.getElementById('responseContainer');
+            responseContainer.style.display = 'none';
+            document.getElementById('resultsDisplay').innerHTML = '';
+        }
+
+        // Auto-connect on page load if server URL is localhost
+        window.addEventListener('load', function() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            if (serverUrl.includes('localhost')) {
+                log('🔄 Auto-connecting to localhost server in 3 seconds...', 'info');
+                setTimeout(connect, 3000);
+            }
+        });
+
+        // Enter key support
+        document.getElementById('queryInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && isConnected) {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>
