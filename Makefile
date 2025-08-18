@@ -67,7 +67,7 @@ test-coverage: ## Run tests with coverage report
 
 test-integration: ## Run integration tests
 	@echo "🧪 Running integration tests..."
-	cd docker && python -m pytest tests/ -v -k integration --tb=short
+	cd docker && python -m pytest . -v -k integration --tb=short
 
 # Quality checks
 check-all: format-check lint test ## Run all quality checks (CI pipeline)
