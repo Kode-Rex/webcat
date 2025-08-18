@@ -63,7 +63,7 @@ test: ## Run tests
 
 test-coverage: ## Run tests with coverage report
 	@echo "🧪 Running tests with coverage..."
-	cd docker && python -m pytest tests/ -v --cov=. --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing
+	cd docker && python -m pytest tests/ -v --cov=. --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing --cov-config=.coveragerc
 
 test-integration: ## Run integration tests
 	@echo "🧪 Running integration tests..."
