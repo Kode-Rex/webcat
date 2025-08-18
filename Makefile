@@ -90,6 +90,13 @@ security: ## Run security checks
 	safety check --json --output safety-report.json || true
 	@echo "✅ Security checks complete!"
 
+security-check: security ## Alias for security target (CI compatibility)
+
+audit: ## Run dependency audit
+	@echo "🔍 Running dependency audit..."
+	pip-audit --format=json --output=audit-report.json || true
+	@echo "✅ Dependency audit complete!"
+
 # Docker operations
 docker-build: ## Build Docker image
 	@echo "🐳 Building Docker image..."
