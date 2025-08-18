@@ -28,31 +28,10 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+        run: make install-dev
 
-      - name: Check code formatting (Black)
-        run: black --config pyproject.toml --check --diff .
-
-      - name: Check import sorting (isort)
-        run: isort --settings-path pyproject.toml --check-only --diff .
-
-      - name: Lint with flake8
-        run: flake8 .
-
-      # - name: Type check with mypy (disabled - too strict for current codebase)
-      #   run: mypy --config-file pyproject.toml .
-
-      # - name: Security check with bandit (disabled - too many false positives)
-      #   run: bandit -r . -f json -o bandit-report.json
-
-      # - name: Upload bandit report (disabled with bandit)
-      #   uses: actions/upload-artifact@v4
-      #   if: always()
-      #   with:
-      #     name: bandit-report
-      #     path: bandit-report.json
+      - name: Check code formatting and linting
+        run: make format-check lint
 
   # Testing
   test:
@@ -73,14 +52,10 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+        run: make install-dev
 
       - name: Run tests with coverage
-        run: |
-          cd docker
-          python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --cov-report=term
+        run: make test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -114,16 +89,12 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+        run: make install-dev
 
       - name: Run integration tests
         env:
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
-        run: |
-          cd docker
-          python -m pytest tests/ -v -k integration --tb=short
+        run: make test-integration
 
   # Docker Build Test
   docker:
