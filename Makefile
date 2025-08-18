@@ -37,13 +37,19 @@ format-check: ## Check code formatting without making changes
 	black --config pyproject.toml --check --diff .
 	isort --settings-path pyproject.toml --check-only --diff .
 
-lint: ## Run all linting checks
+lint: ## Run essential linting checks (matches CI)
 	@echo "🔍 Running linting checks..."
+	python -m flake8 --version
+	flake8 .
+	@echo "✅ Linting complete!"
+
+lint-full: ## Run all linting checks (including MyPy and Bandit)
+	@echo "🔍 Running full linting checks..."
 	python -m flake8 --version
 	python -m flake8 . || echo "⚠️ Flake8 had issues, continuing..."
 	mypy --config-file pyproject.toml . || echo "⚠️ MyPy had issues, continuing..."
 	bandit -r . -f json -o bandit-report.json || echo "⚠️ Bandit had issues, continuing..."
-	@echo "✅ Linting checks attempted!"
+	@echo "✅ All linting checks attempted!"
 
 lint-fix: ## Fix auto-fixable linting issues
 	@echo "🔧 Fixing linting issues..."
@@ -57,15 +63,18 @@ test: ## Run tests
 
 test-coverage: ## Run tests with coverage report
 	@echo "🧪 Running tests with coverage..."
-	cd docker && python -m pytest tests/ -v --cov=. --cov-report=html --cov-report=term --cov-report=xml
+	cd docker && python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --cov-report=term
 
 test-integration: ## Run integration tests
 	@echo "🧪 Running integration tests..."
-	cd docker && python -m pytest tests/ -v -k integration
+	cd docker && python -m pytest tests/ -v -k integration --tb=short
 
 # Quality checks
 check-all: format-check lint test ## Run all quality checks (CI pipeline)
 	@echo "✅ All quality checks passed!"
+
+check-all-full: format-check lint-full test ## Run all quality checks including strict linting
+	@echo "✅ All quality checks completed!"
 
 docker-lint: ## Lint Dockerfiles (requires Docker running)
 	@echo "🐳 Linting Dockerfiles..."
