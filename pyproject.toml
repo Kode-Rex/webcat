@@ -230,7 +230,10 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
-# Flake8 configuration (in setup.cfg format for compatibility)
+# Flake8 configuration
+# NOTE: Flake8 does not natively support pyproject.toml
+# Configuration is in setup.cfg for compatibility
+# This section is kept for documentation purposes only
 [tool.flake8]
 max-line-length = 88
 select = ["E", "W", "F", "C", "B"]
