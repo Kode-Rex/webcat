@@ -68,12 +68,50 @@ except ImportError:
 
 # Model definitions
 class SearchResult(BaseModel):
-    """Model for a search result."""
+    """Model for a single search result with scraped content."""
 
     title: str
     url: Optional[str] = ""
     snippet: str
     content: str = ""
+
+
+class APISearchResult(BaseModel):
+    """Raw search result from external API (Serper/DuckDuckGo)."""
+
+    title: str
+    link: str
+    snippet: str
+
+    class Config:
+        """Pydantic config."""
+
+        # Allow both 'link', 'url', and 'href' for compatibility
+        extra = "allow"
+
+
+class SearchResponse(BaseModel):
+    """Response from the search tool."""
+
+    query: str
+    search_source: str
+    results: List[SearchResult]
+    error: Optional[str] = None
+
+
+class HealthCheckResponse(BaseModel):
+    """Response from health check tool."""
+
+    status: str
+    service: str
+
+
+class ErrorResponse(BaseModel):
+    """Error response format."""
+
+    error: str
+    query: Optional[str] = None
+    details: Optional[str] = None
 
 
 # Configure API keys
@@ -88,7 +126,7 @@ mcp_server = FastMCP("WebCat Search")
 
 
 # Utility functions
-def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
+def fetch_search_results(query: str, api_key: str) -> List[APISearchResult]:
     """
     Fetches search results from the Serper API.
 
@@ -97,7 +135,7 @@ def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
         api_key: The Serper API key
 
     Returns:
-        A list of search result dictionaries
+        A list of APISearchResult objects from Serper API
     """
     url = "https://google.serper.dev/search"
     payload = json.dumps({"q": query})
@@ -110,7 +148,15 @@ def fetch_search_results(query: str, api_key: str) -> List[Dict[str, Any]]:
 
         # Process and return the search results
         if "organic" in data:
-            return data["organic"]
+            # Convert to APISearchResult objects
+            return [
+                APISearchResult(
+                    title=result.get("title", "Untitled"),
+                    link=result.get("link", ""),
+                    snippet=result.get("snippet", ""),
+                )
+                for result in data["organic"]
+            ]
         return []
     except Exception as e:
         logging.error(f"Error fetching search results: {str(e)}")
@@ -262,24 +308,24 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
         return result
 
 
-def process_search_results(results: List[Dict[str, Any]]) -> List[SearchResult]:
+def process_search_results(results: List[APISearchResult]) -> List[SearchResult]:
     """
-    Processes raw search results into SearchResult objects with content.
+    Processes API search results into SearchResult objects with scraped content.
 
     Args:
-        results: List of raw search result dictionaries
+        results: List of APISearchResult objects from search APIs
 
     Returns:
         List of SearchResult objects with scraped content
     """
     processed_results = []
 
-    for result in results:
-        # Create a SearchResult object
+    for api_result in results:
+        # Create a SearchResult object from API result
         search_result = SearchResult(
-            title=result.get("title", "Untitled"),
-            url=result.get("link", ""),
-            snippet=result.get("snippet", ""),
+            title=api_result.title,
+            url=api_result.link,
+            snippet=api_result.snippet,
         )
 
         # Scrape content for the result
@@ -291,7 +337,7 @@ def process_search_results(results: List[Dict[str, Any]]) -> List[SearchResult]:
 
 def fetch_duckduckgo_search_results(
     query: str, max_results: int = 3
-) -> List[Dict[str, Any]]:
+) -> List[APISearchResult]:
     """
     Fetches search results from DuckDuckGo as a free fallback.
 
@@ -300,7 +346,7 @@ def fetch_duckduckgo_search_results(
         max_results: Maximum number of results to return
 
     Returns:
-        A list of search result dictionaries
+        A list of APISearchResult objects from DuckDuckGo
     """
     if not DDGS:
         logging.error("DuckDuckGo search not available (library not installed)")
@@ -315,13 +361,13 @@ def fetch_duckduckgo_search_results(
             search_results = ddgs.text(query, max_results=max_results)
 
             for result in search_results:
-                # Convert DuckDuckGo result format to match Serper format
+                # Convert DuckDuckGo result format to APISearchResult
                 results.append(
-                    {
-                        "title": result.get("title", "Untitled"),
-                        "link": result.get("href", ""),
-                        "snippet": result.get("body", ""),
-                    }
+                    APISearchResult(
+                        title=result.get("title", "Untitled"),
+                        link=result.get("href", ""),
+                        snippet=result.get("body", ""),
+                    )
                 )
 
             logging.info(f"DuckDuckGo returned {len(results)} results")
@@ -337,8 +383,12 @@ def fetch_duckduckgo_search_results(
     name="search",
     description="Search the web for information using Serper API or DuckDuckGo fallback",
 )
-async def search_tool(query: str, ctx=None):
-    """Search the web for information on a given query."""
+async def search_tool(query: str, ctx=None) -> dict:
+    """Search the web for information on a given query.
+
+    Returns:
+        Dict representation of SearchResponse model
+    """
     logging.info(f"Processing search request: {query}")
 
     results = []
@@ -363,28 +413,36 @@ async def search_tool(query: str, ctx=None):
     # Check if we got any results
     if not results:
         logging.warning(f"No search results found for query: {query}")
-        return {
-            "error": "No search results found from any source.",
-            "query": query,
-            "search_source": search_source,
-        }
+        response = SearchResponse(
+            query=query,
+            search_source=search_source,
+            results=[],
+            error="No search results found from any source.",
+        )
+        return response.model_dump()
 
     # Process the results
     processed_results = process_search_results(results)
 
-    # Return formatted results
-    return {
-        "query": query,
-        "search_source": search_source,
-        "results": [result.model_dump() for result in processed_results],
-    }
+    # Return formatted results as SearchResponse
+    response = SearchResponse(
+        query=query,
+        search_source=search_source,
+        results=processed_results,
+    )
+    return response.model_dump()
 
 
 # Create a simple health check tool
 @mcp_server.tool(name="health_check", description="Check the health of the server")
-async def health_check():
-    """Check the health of the server."""
-    return {"status": "healthy", "service": "webcat"}
+async def health_check() -> dict:
+    """Check the health of the server.
+
+    Returns:
+        Dict representation of HealthCheckResponse model
+    """
+    response = HealthCheckResponse(status="healthy", service="webcat")
+    return response.model_dump()
 
 
 if __name__ == "__main__":
