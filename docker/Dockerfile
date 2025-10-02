@@ -2,13 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy necessary files
-COPY docker/requirements.txt /app/
-COPY docker/*.py /app/
+# Copy project metadata and structure
+COPY pyproject.toml README.md LICENSE /app/
+
+# Copy docker module (source code)
+COPY docker/*.py /app/docker/
+
+# Copy examples
 COPY examples/ /app/examples/
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install package with dependencies from pyproject.toml
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir /app
 
 # Create log directory with proper permissions
 RUN mkdir -p /var/log/webcat && chmod 755 /var/log/webcat
@@ -24,5 +29,8 @@ ENV WEBCAT_MODE=demo
 EXPOSE ${PORT}
 EXPOSE $((${PORT} + 1))
 
+# Set working directory to docker module for runtime
+WORKDIR /app/docker
+
 # Command to run the application
-CMD python cli.py --mode ${WEBCAT_MODE:-demo} --host 0.0.0.0 --port ${PORT}
+CMD ["python", "cli.py", "--mode", "demo", "--host", "0.0.0.0"]
