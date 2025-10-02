@@ -245,7 +245,7 @@ def test_live_search():  # Missing @pytest.mark.integration
 
 ### Dependency Management
 
-WebCat uses **pyproject.toml** (PEP 621) for dependency management:
+WebCat uses **pyproject.toml** (PEP 621) for all dependency management:
 
 ```bash
 # Install production dependencies
@@ -264,7 +264,8 @@ pip install -e ".[docs]"
 pip install -e ".[all]"
 ```
 
-**Legacy**: `requirements-dev.txt` is maintained for backwards compatibility but dependencies are defined in `pyproject.toml`.
+**Note**: All dependencies are defined in `pyproject.toml`. No `requirements.txt` files are used except for:
+- `customgpt/requirements.txt` - Azure Functions deployment (separate component)
 
 ### Environment Variables
 
