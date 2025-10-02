@@ -11,7 +11,7 @@ from unittest.mock import patch
 from constants import MAX_CONTENT_LENGTH
 from services.content_scraper import scrape_search_result
 from tests.builders.search_result_builder import a_search_result
-from tests.factories.http_factories import HttpResponseFactory
+from tests.factories.http_response_factory import HttpResponseFactory
 
 
 class TestContentScraperSuccess:
@@ -76,7 +76,7 @@ class TestContentScraperErrors:
     def test_returns_error_message_on_timeout(self, mock_get):
         # Arrange
         result = a_search_result().build()
-        mock_get.side_effect = HttpResponseFactory.timeout().side_effect
+        mock_get.side_effect = HttpResponseFactory.timeout()
 
         # Act
         scraped = scrape_search_result(result)

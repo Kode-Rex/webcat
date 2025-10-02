@@ -12,7 +12,7 @@ import tempfile
 import pytest
 
 from tests.builders.search_result_builder import a_search_result, a_wikipedia_article
-from tests.factories.http_factories import HttpResponseFactory
+from tests.factories.http_response_factory import HttpResponseFactory
 
 
 @pytest.fixture(scope="session", autouse=True)
