@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from docker.models.search_result import SearchResult
+from models.search_result import SearchResult
 
 
 class SearchResponse(BaseModel):
