@@ -3,7 +3,40 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Entry point for the WebCat server using FastMCP."""
+"""Entry point for the WebCat server using FastMCP.
+
+Type Safety Architecture:
+-------------------------
+This module uses Pydantic models for strong typing throughout:
+
+1. **Internal Functions**: Return typed Pydantic models
+   - fetch_search_results() -> List[APISearchResult]
+   - process_search_results() -> List[SearchResult]
+   - Full type safety, IDE autocomplete, mypy validation
+
+2. **MCP Tool Functions**: Only convert to dict at the boundary
+   - @mcp_server.tool() functions MUST return dict (MCP protocol requirement)
+   - Internal logic uses typed models
+   - Only call .model_dump() at return statement for JSON serialization
+
+3. **Benefits**:
+   - Type safety everywhere except MCP boundary
+   - Pydantic validates data structure automatically
+   - IDE provides full autocomplete
+   - mypy catches type errors at development time
+
+Example:
+    # Internal function - returns typed model
+    def fetch_results() -> List[APISearchResult]:
+        return [APISearchResult(...)]
+
+    # MCP tool - uses types internally, converts at boundary
+    @mcp_server.tool()
+    async def search_tool() -> dict:
+        results: List[APISearchResult] = fetch_results()  # Typed!
+        response = SearchResponse(results=results)        # Typed!
+        return response.model_dump()                      # Dict for MCP
+"""
 
 import json
 import logging
@@ -387,31 +420,32 @@ async def search_tool(query: str, ctx=None) -> dict:
     """Search the web for information on a given query.
 
     Returns:
-        Dict representation of SearchResponse model
+        Dict representation of SearchResponse model (for MCP JSON serialization)
     """
     logging.info(f"Processing search request: {query}")
 
-    results = []
-    search_source = "Unknown"
+    # Typed as List[APISearchResult] - holds raw API responses
+    api_results: List[APISearchResult] = []
+    search_source: str = "Unknown"
 
     # Try Serper API first if key is available
     if SERPER_API_KEY:
         logging.info("Using Serper API for search")
         search_source = "Serper API"
-        results = fetch_search_results(query, SERPER_API_KEY)
+        api_results = fetch_search_results(query, SERPER_API_KEY)
 
     # Fall back to DuckDuckGo if no API key or no results from Serper
-    if not results:
+    if not api_results:
         if not SERPER_API_KEY:
             logging.info("No Serper API key configured, using DuckDuckGo fallback")
         else:
             logging.warning("No results from Serper API, trying DuckDuckGo fallback")
 
         search_source = "DuckDuckGo (free fallback)"
-        results = fetch_duckduckgo_search_results(query)
+        api_results = fetch_duckduckgo_search_results(query)
 
     # Check if we got any results
-    if not results:
+    if not api_results:
         logging.warning(f"No search results found for query: {query}")
         response = SearchResponse(
             query=query,
@@ -419,17 +453,19 @@ async def search_tool(query: str, ctx=None) -> dict:
             results=[],
             error="No search results found from any source.",
         )
+        # Only convert to dict at MCP boundary for JSON serialization
         return response.model_dump()
 
-    # Process the results
-    processed_results = process_search_results(results)
+    # Process the results - typed as List[SearchResult]
+    processed_results: List[SearchResult] = process_search_results(api_results)
 
-    # Return formatted results as SearchResponse
+    # Build typed response
     response = SearchResponse(
         query=query,
         search_source=search_source,
         results=processed_results,
     )
+    # Only convert to dict at MCP boundary for JSON serialization
     return response.model_dump()
 
 
@@ -439,9 +475,11 @@ async def health_check() -> dict:
     """Check the health of the server.
 
     Returns:
-        Dict representation of HealthCheckResponse model
+        Dict representation of HealthCheckResponse model (for MCP JSON serialization)
     """
+    # Build typed response
     response = HealthCheckResponse(status="healthy", service="webcat")
+    # Only convert to dict at MCP boundary for JSON serialization
     return response.model_dump()
 
 
