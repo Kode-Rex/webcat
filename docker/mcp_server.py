@@ -39,44 +39,15 @@ Example:
 """
 
 import logging
-import logging.handlers
 import os
-import tempfile
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
+from utils.logging_config import setup_logging
+
 # Set up logging
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
-LOG_DIR = os.environ.get("LOG_DIR", tempfile.gettempdir())
-LOG_FILE = os.path.join(LOG_DIR, "webcat.log")
-
-# Create log directory if it doesn't exist
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Configure root logger
-logger = logging.getLogger()
-logger.setLevel(getattr(logging, LOG_LEVEL))
-
-# Create formatters
-console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
-# Setup console handler
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(console_formatter)
-logger.addHandler(console_handler)
-
-# Setup rotating file handler (10MB per file, keep 5 backup files)
-file_handler = logging.handlers.RotatingFileHandler(
-    LOG_FILE, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 10MB
-)
-file_handler.setFormatter(file_formatter)
-logger.addHandler(file_handler)
-
-logging.info("Logging initialized with file rotation at %s", LOG_FILE)
+logger = setup_logging("webcat.log")
 
 # Load environment variables
 load_dotenv()
