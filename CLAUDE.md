@@ -161,19 +161,20 @@ make format         # Format all Python code with Black + isort
 make format-check   # Check formatting without changes
 
 # Lint code
-make lint           # Run flake8 + bandit on all code
+make lint           # Run flake8 on all code
 make lint-api       # Lint docker/ directory only
 
 # Security checks
 make security       # Run bandit security scanner
-make safety         # Check dependencies for vulnerabilities
+make audit          # Check dependencies for vulnerabilities
 
 # Pre-commit hooks
 make pre-commit-install  # Install git hooks
 make pre-commit-run      # Run all pre-commit hooks manually
 
-# Full CI pipeline (from project root)
-make ci             # format-check + lint + security + test
+# CI simulation (run before pushing)
+make ci             # Full CI: format-check + lint + test-coverage + security + audit
+make ci-fast        # Fast CI: format-check + lint + test (no security/audit)
 ```
 
 **Code formatting standards**:
@@ -265,6 +266,33 @@ This ensures:
 - ✅ Pre-commit hooks use the exact same rules/config as CI
 - ✅ Developers see identical linting results locally and in CI
 - ✅ `make format-check lint` produces identical results to pre-commit hooks
+
+### CI Workflow
+
+**Before committing:**
+```bash
+make format        # Auto-fix formatting issues
+make lint          # Check for linting issues
+```
+
+**Before pushing (recommended):**
+```bash
+make ci-fast       # Quick validation (~30 seconds)
+# OR
+make ci            # Full validation with security checks (~2-3 minutes)
+```
+
+**On git commit:**
+- Pre-commit hooks run automatically (black, isort, autoflake, flake8)
+- Uses same tools/config as `make format-check lint`
+
+**On git push (GitHub Actions):**
+- Quality job: `make format-check lint`
+- Test job: `make test-coverage`
+- Security job: `make security` (PRs only)
+- Audit job: `make audit` (PRs only)
+
+**Result:** If `make ci` passes locally, GitHub Actions CI will pass! ✨
 
 ## Configuration
 
