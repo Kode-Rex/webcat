@@ -12,6 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from readability import Document
 
+from constants import MAX_CONTENT_LENGTH, REQUEST_TIMEOUT_SECONDS
 from models.search_result import SearchResult
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,9 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
             "Cache-Control": "max-age=0",
         }
 
-        response = requests.get(result.url, timeout=5, headers=headers)
+        response = requests.get(
+            result.url, timeout=REQUEST_TIMEOUT_SECONDS, headers=headers
+        )
         response.raise_for_status()
 
         # Check content type to handle different file types
@@ -149,8 +152,10 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
             )
 
         # Limit content length to prevent huge responses
-        if len(full_content) > 8000:
-            full_content = full_content[:8000] + "... [content truncated]"
+        if len(full_content) > MAX_CONTENT_LENGTH:
+            full_content = (
+                full_content[:MAX_CONTENT_LENGTH] + "... [content truncated]"
+            )
 
         result.content = full_content
         return result

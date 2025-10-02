@@ -9,14 +9,10 @@ import logging
 import os
 from typing import List
 
-from clients.duckduckgo_client import (
-    fetch_duckduckgo_search_results as fetch_ddg_results,
-)
-from clients.serper_client import fetch_search_results
-from models.api_search_result import APISearchResult
 from models.search_response import SearchResponse
 from models.search_result import SearchResult
 from services.search_processor import process_search_results
+from services.search_service import fetch_with_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -39,25 +35,8 @@ async def search_tool(query: str, ctx=None) -> dict:
     """
     logger.info(f"Processing search request: {query}")
 
-    # Typed as List[APISearchResult] - holds raw API responses
-    api_results: List[APISearchResult] = []
-    search_source: str = "Unknown"
-
-    # Try Serper API first if key is available
-    if SERPER_API_KEY:
-        logger.info("Using Serper API for search")
-        search_source = "Serper API"
-        api_results = fetch_search_results(query, SERPER_API_KEY)
-
-    # Fall back to DuckDuckGo if no API key or no results from Serper
-    if not api_results:
-        if not SERPER_API_KEY:
-            logger.info("No Serper API key configured, using DuckDuckGo fallback")
-        else:
-            logger.warning("No results from Serper API, trying DuckDuckGo fallback")
-
-        search_source = "DuckDuckGo (free fallback)"
-        api_results = fetch_ddg_results(query)
+    # Fetch results with automatic fallback
+    api_results, search_source = fetch_with_fallback(query, SERPER_API_KEY)
 
     # Check if we got any results
     if not api_results:
