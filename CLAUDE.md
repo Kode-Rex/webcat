@@ -242,15 +242,28 @@ def test_live_search():  # Missing @pytest.mark.integration
 
 ### Single Source of Truth
 
-**All tool versions are defined in `pyproject.toml`** under `[project.optional-dependencies.dev]`:
+**Tool Versions** are defined in `pyproject.toml` under `[project.optional-dependencies.dev]`:
 - Pre-commit hooks use `language: system` to reference locally installed tools
 - CI pipeline installs via `pip install -e ".[dev]"` and runs the same tools
 - No version mismatches between pre-commit and CI
 
-This ensures that:
+**Tool Rules/Configuration**:
+- **Black**: `[tool.black]` in `pyproject.toml`
+- **isort**: `[tool.isort]` in `pyproject.toml`
+- **mypy**: `[tool.mypy]` in `pyproject.toml`
+- **pytest**: `[tool.pytest.ini_options]` in `pyproject.toml`
+- **coverage**: `[tool.coverage.*]` in `pyproject.toml`
+- **Flake8**: `[flake8]` in `setup.cfg` (flake8 doesn't natively support pyproject.toml)
+
+All tools reference their respective config files via CLI args:
+- Pre-commit: `black --config pyproject.toml`, `isort --settings-path pyproject.toml`
+- Makefile: Same commands
+- CI: Same commands
+
+This ensures:
 - ✅ Pre-commit hooks use the exact same tool versions as CI
-- ✅ Developers see the same linting results locally as in CI
-- ✅ Tool versions are managed in one place (pyproject.toml)
+- ✅ Pre-commit hooks use the exact same rules/config as CI
+- ✅ Developers see identical linting results locally and in CI
 - ✅ `make format-check lint` produces identical results to pre-commit hooks
 
 ## Configuration
