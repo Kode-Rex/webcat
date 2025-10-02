@@ -124,21 +124,25 @@ def a_my_model() -> MyModelBuilder:
 
 ## Factory Pattern
 
-Factories create pre-configured mock objects with consistent behavior.
+Factories create **typed test doubles**, not raw MagicMock objects with property assignment.
 
-### Why Use Factories?
+### Why Use Typed Test Doubles?
 
+- **No raw mock property assignment** - Avoid `mock.status_code = 200` anti-pattern
+- **Type safety** - Factories return properly typed test doubles
+- **Immutable configuration** - All properties set via constructor
 - **Eliminate duplication** - Mock configuration in one place
-- **Consistent behavior** - All tests use same mock structure
-- **Easy to modify** - Change mock behavior globally
-- **Type safety** - Factories return properly typed mocks
+- **Consistent behavior** - All tests use same test double structure
+- **Easy to modify** - Change behavior globally
 
 ### Available Factories
 
 #### HttpResponseFactory
 
+Returns `MockHttpResponse` instances (typed test doubles), not `MagicMock`.
+
 ```python
-from tests.factories.http_factories import HttpResponseFactory
+from tests.factories.http_response_factory import HttpResponseFactory
 
 # Successful HTML response
 mock_response = HttpResponseFactory.success()
@@ -154,8 +158,11 @@ mock_response = HttpResponseFactory.pdf()
 
 # Error responses
 mock_response = HttpResponseFactory.error_404()
-mock_response = HttpResponseFactory.timeout()
-mock_response = HttpResponseFactory.connection_error()
+mock_response = HttpResponseFactory.error_500()
+
+# Exceptions for side_effect
+timeout_exception = HttpResponseFactory.timeout()
+connection_exception = HttpResponseFactory.connection_error()
 ```
 
 ### Using Factories in Tests
@@ -176,28 +183,61 @@ def test_scraper_handles_html(mock_get):
 
 ### Creating New Factories
 
-When you need a factory for new mocks:
+When you need a factory for new test doubles:
 
-1. Create a new file in `tests/factories/`
-2. Implement static methods for each mock variant
-3. Return properly configured `MagicMock` objects
+1. **Create a typed test double** in `tests/factories/mock_*.py`
+2. **Create a factory** in `tests/factories/*_factory.py`
+3. **Return typed test doubles**, not MagicMock with property assignment
 
-**Template:**
+**Step 1: Create Typed Test Double**
 ```python
-class MyServiceFactory:
+# tests/factories/mock_api_response.py
+class MockApiResponse:
+    """Typed test double for API responses."""
+
+    def __init__(self, status: str = "success", data: dict = None):
+        self.status = status
+        self.data = data or {}
+
+    def json(self) -> dict:
+        return {"status": self.status, "data": self.data}
+```
+
+**Step 2: Create Factory**
+```python
+# tests/factories/api_response_factory.py
+from tests.factories.mock_api_response import MockApiResponse
+
+class ApiResponseFactory:
     @staticmethod
-    def successful_response() -> MagicMock:
-        mock = MagicMock()
-        mock.status = "success"
-        mock.data = {"key": "value"}
-        return mock
+    def successful_response(data: dict = None) -> MockApiResponse:
+        return MockApiResponse(status="success", data=data or {"key": "value"})
 
     @staticmethod
-    def error_response(error_code: int = 500) -> MagicMock:
-        mock = MagicMock()
-        mock.status = "error"
-        mock.error_code = error_code
-        return mock
+    def error_response(error_code: int = 500) -> MockApiResponse:
+        return MockApiResponse(
+            status="error",
+            data={"error_code": error_code, "message": "Error occurred"}
+        )
+```
+
+**Why Typed Test Doubles?**
+
+❌ **Bad: Raw MagicMock with property assignment**
+```python
+mock = MagicMock()
+mock.status_code = 200  # Mutable, no type safety
+mock.content = b"test"  # Can assign anything
+mock.headers = {}       # Easy to forget properties
+```
+
+✅ **Good: Typed test double**
+```python
+class MockHttpResponse:
+    def __init__(self, status_code: int, content: bytes, headers: dict):
+        self.status_code = status_code  # Type-checked
+        self.content = content           # Immutable after construction
+        self.headers = headers           # All properties required
 ```
 
 ---
