@@ -75,7 +75,11 @@ The scraper handles multiple content types (HTML, plain text, PDF detection) and
 ### Running the Application
 
 ```bash
-# Quick start with Docker (recommended)
+# Development mode with auto-reload (recommended for local dev)
+make dev         # Start MCP server with auto-reload
+make dev-demo    # Start demo server with auto-reload
+
+# Quick start with Docker (recommended for testing)
 docker run -p 8000:8000 tmfrisinger/webcat:latest
 
 # With Serper API key for premium search
@@ -86,12 +90,12 @@ cd docker
 ./build.sh
 docker-compose up
 
-# Local development (Python 3.11 required)
-cd docker
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python mcp_server.py
+# Production mode (no auto-reload)
+make mcp         # Start MCP server
+make demo        # Start demo server
+
+# First-time setup
+make setup-dev   # Install all dependencies and setup pre-commit hooks
 ```
 
 **Ports and Endpoints**:
@@ -99,6 +103,11 @@ python mcp_server.py
 - **Demo Client**: http://localhost:8000/client
 - **Health Check**: http://localhost:8000/health
 - **Status**: http://localhost:8000/status
+
+**Development mode features**:
+- Auto-reload on file changes (watchdog)
+- Detailed logging for debugging
+- No need to restart server after code changes
 
 ### Testing
 
