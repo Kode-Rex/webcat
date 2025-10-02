@@ -218,10 +218,27 @@ dev-setup: setup-dev format lint test ## Complete development setup
 	@echo "🎉 Development environment ready!"
 
 # CI simulation
-ci: ## Simulate CI pipeline locally
-	@echo "🤖 Simulating CI pipeline..."
+ci: ## Simulate CI pipeline locally (all checks)
+	@echo "🤖 Simulating full CI pipeline..."
+	@echo ""
+	@echo "📋 Step 1/4: Code Quality"
 	$(MAKE) format-check
 	$(MAKE) lint
-	$(MAKE) security
+	@echo ""
+	@echo "🧪 Step 2/4: Tests with Coverage"
 	$(MAKE) test-coverage
-	@echo "✅ CI simulation complete!"
+	@echo ""
+	@echo "🔒 Step 3/4: Security Checks"
+	$(MAKE) security
+	@echo ""
+	@echo "🔍 Step 4/4: Dependency Audit"
+	$(MAKE) audit
+	@echo ""
+	@echo "✅ CI simulation complete! All checks passed."
+
+ci-fast: ## Simulate CI pipeline (fast - no security/audit)
+	@echo "🤖 Simulating fast CI pipeline..."
+	$(MAKE) format-check
+	$(MAKE) lint
+	$(MAKE) test
+	@echo "✅ Fast CI simulation complete!"
