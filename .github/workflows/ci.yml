@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: github.event_name == 'pull_request' || github.event_name == 'schedule'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: docker/coverage.xml
           flags: unittests
