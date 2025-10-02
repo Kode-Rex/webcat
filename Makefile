@@ -12,18 +12,22 @@ setup-dev: ## Set up development environment with all tools
 	@echo "🔧 Setting up development environment..."
 	python -m venv venv
 	./venv/bin/pip install --upgrade pip
-	./venv/bin/pip install -r requirements-dev.txt
+	./venv/bin/pip install -e ".[dev]"
 	./venv/bin/pre-commit install
 	@echo "✅ Development environment ready!"
 
 install: ## Install production dependencies
 	@echo "📦 Installing production dependencies..."
-	pip install -r docker/requirements.txt
+	pip install -e .
 
 install-dev: ## Install development dependencies
 	@echo "📦 Installing development dependencies..."
-	pip install -r requirements-dev.txt
+	pip install -e ".[dev]"
 	pre-commit install
+
+install-all: ## Install all optional dependencies
+	@echo "📦 Installing all dependencies..."
+	pip install -e ".[all]"
 
 # Code quality
 format: ## Format code with black and isort

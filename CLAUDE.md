@@ -96,6 +96,10 @@ make demo        # Start demo server
 
 # First-time setup
 make setup-dev   # Install all dependencies and setup pre-commit hooks
+
+# Alternative: Install using pyproject.toml directly
+pip install -e ".[dev]"     # Development dependencies
+pip install -e ".[all]"     # All optional dependencies
 ```
 
 **Ports and Endpoints**:
@@ -239,7 +243,31 @@ def test_live_search():  # Missing @pytest.mark.integration
 
 ## Configuration
 
-**Environment Variables**:
+### Dependency Management
+
+WebCat uses **pyproject.toml** (PEP 621) for dependency management:
+
+```bash
+# Install production dependencies
+pip install -e .
+
+# Install with development tools
+pip install -e ".[dev]"
+
+# Install with testing tools
+pip install -e ".[test]"
+
+# Install with documentation tools
+pip install -e ".[docs]"
+
+# Install everything
+pip install -e ".[all]"
+```
+
+**Legacy**: `requirements-dev.txt` is maintained for backwards compatibility but dependencies are defined in `pyproject.toml`.
+
+### Environment Variables
+
 - `SERPER_API_KEY` - **Optional** - Serper API key for premium search (falls back to DuckDuckGo if not set)
 - `PORT` - Port to run server on (default: 8000)
 - `LOG_LEVEL` - Logging level (default: INFO)
