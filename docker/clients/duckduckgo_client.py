@@ -8,7 +8,7 @@
 import logging
 from typing import List
 
-from docker.models.api_search_result import APISearchResult
+from models.api_search_result import APISearchResult
 
 logger = logging.getLogger(__name__)
 

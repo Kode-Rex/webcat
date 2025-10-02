@@ -11,7 +11,7 @@ from typing import List
 
 import requests
 
-from docker.models.api_search_result import APISearchResult
+from models.api_search_result import APISearchResult
 
 logger = logging.getLogger(__name__)
 
