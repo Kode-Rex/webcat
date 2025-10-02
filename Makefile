@@ -111,18 +111,35 @@ docker-run-prod: ## Run Docker container in production mode
 	docker run -p 8000:8000 -e WEBCAT_MODE=mcp webcat:latest
 
 # Development servers
-demo: ## Start demo server locally
+dev: ## Start MCP server with auto-reload (development mode)
+	@echo "🚀 Starting MCP server with auto-reload..."
+	@echo "📡 MCP endpoint: http://localhost:8000/mcp"
+	@echo "💗 Health check: http://localhost:8000/health"
+	@echo "🔄 Auto-reload enabled - edit files to see changes"
+	@echo ""
+	cd docker && PYTHONPATH=. watchmedo auto-restart --recursive --pattern="*.py" --directory=. -- python mcp_server.py
+
+dev-demo: ## Start demo server with auto-reload (development mode)
+	@echo "🚀 Starting demo server with auto-reload..."
+	@echo "🎨 Demo client: http://localhost:8000/client"
+	@echo "💗 Health check: http://localhost:8000/health"
+	@echo "📊 Status: http://localhost:8000/status"
+	@echo "🔄 Auto-reload enabled - edit files to see changes"
+	@echo ""
+	cd docker && PYTHONPATH=. watchmedo auto-restart --recursive --pattern="*.py" --directory=. -- python simple_demo.py
+
+demo: ## Start demo server locally (production mode)
 	@echo "🎨 Starting demo server..."
-	cd docker && source venv/bin/activate && python cli.py --mode demo --port 8000
+	cd docker && python cli.py --mode demo --port 8000
 
 demo-bg: ## Start demo server in background
 	@echo "🎨 Starting demo server in background..."
-	cd docker && source venv/bin/activate && nohup python cli.py --mode demo --port 8000 > demo.log 2>&1 &
+	cd docker && nohup python cli.py --mode demo --port 8000 > demo.log 2>&1 &
 	@echo "Demo server started in background. Check demo.log for logs."
 
-mcp: ## Start MCP server locally
+mcp: ## Start MCP server locally (production mode)
 	@echo "🛠️ Starting MCP server..."
-	cd docker && source venv/bin/activate && python cli.py --mode mcp --port 8000
+	cd docker && python cli.py --mode mcp --port 8000
 
 stop-bg: ## Stop background servers
 	@echo "🛑 Stopping background servers..."
@@ -193,8 +210,8 @@ env-info: ## Show environment information
 	@echo "Git commit: $(shell git rev-parse --short HEAD 2>/dev/null || echo 'Not a git repo')"
 
 # Quick development workflow
-dev: setup-dev format lint test demo ## Complete development setup and start demo
-	@echo "🎉 Development environment ready and demo server running!"
+dev-setup: setup-dev format lint test ## Complete development setup
+	@echo "🎉 Development environment ready!"
 
 # CI simulation
 ci: ## Simulate CI pipeline locally

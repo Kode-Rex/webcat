@@ -63,3 +63,6 @@ types-PyYAML>=6.0.0
 
 # Type stubs
 types-requests>=2.31.0
+
+# File watching for development
+watchdog>=3.0.0  # for auto-reload in dev mode
