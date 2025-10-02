@@ -1,5 +1,16 @@
 # WebCat MCP Server - Development Dependencies
 # ============================================
+#
+# NOTE: This file is maintained for backwards compatibility.
+# Dependencies are now managed in pyproject.toml under [project.optional-dependencies].
+#
+# To install development dependencies, use:
+#   pip install -e ".[dev]"
+#
+# Or to install all optional dependencies:
+#   pip install -e ".[all]"
+#
+# This file will be kept in sync with pyproject.toml for legacy tooling.
 
 # Production dependencies
 -r docker/requirements.txt
@@ -9,10 +20,15 @@ autopep8>=2.0.0
 # Security
 bandit>=1.7.0
 
+# Development dependencies (from pyproject.toml [project.optional-dependencies.dev])
 # Code formatting
 black>=23.0.0
-build>=0.10.0  # for building packages
-click>=8.1.0  # for CLI development
+
+# Build and release
+build>=0.10.0
+
+# CLI tools
+click>=8.1.0
 
 # Linting and static analysis
 flake8>=6.0.0
@@ -20,22 +36,20 @@ flake8-bugbear>=23.0.0
 flake8-comprehensions>=3.14.0
 flake8-docstrings>=1.7.0
 flake8-import-order>=0.18.0
-httpx>=0.24.0  # for testing FastAPI apps
+httpx>=0.24.0
 
-# Debugging and profiling
+# Development tools
 ipdb>=0.13.0
 ipython>=8.14.0
 isort>=5.12.0
-
-# Jupyter (for development and analysis)
 jupyter>=1.0.0
+
+# Profiling
 line-profiler>=4.0.0
 memory-profiler>=0.61.0
 mypy>=1.5.0
 myst-parser>=2.0.0
-
-# Development tools
-pip-tools>=7.0.0  # for dependency management
+pip-tools>=7.0.0
 
 # Pre-commit hooks
 pre-commit>=3.3.0
@@ -46,23 +60,16 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 pytest-mock>=3.11.0
-pytest-xdist>=3.3.0  # parallel testing
-python-dotenv>=1.0.0  # already in main requirements but ensuring latest
-
-# Additional utilities
-rich>=13.0.0  # for beautiful terminal output
+pytest-xdist>=3.3.0
+rich>=13.0.0
 safety>=2.3.0
 
 # Documentation
 sphinx>=7.1.0
 sphinx-rtd-theme>=1.3.0
-testcontainers>=3.7.0  # for Docker-based testing
-tox>=4.6.0  # for testing across environments
-twine>=4.0.0  # for uploading packages
+testcontainers>=3.7.0
+tox>=4.6.0
+twine>=4.0.0
 types-PyYAML>=6.0.0
-
-# Type stubs
 types-requests>=2.31.0
-
-# File watching for development
-watchdog>=3.0.0  # for auto-reload in dev mode
+watchdog>=3.0.0
