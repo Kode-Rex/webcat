@@ -71,7 +71,7 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
         """Search the web for information on a given query.
 
         Returns:
-            Dict representation of APISearchToolResponse model
+            Dict representation of APISearchToolResponse model (for MCP JSON serialization)
         """
         try:
             logger.info(
@@ -80,15 +80,16 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
 
             # Call the existing search function
             if "search" in webcat_functions:
-                result = await webcat_functions["search"](query)
+                result: dict = await webcat_functions["search"](query)
 
                 # Limit results if specified
-                note = ""
-                results = result.get("results", [])
+                note: str = ""
+                results: List[Dict[str, Any]] = result.get("results", [])
                 if results and len(results) > max_results:
                     results = results[:max_results]
                     note = f"Results limited to {max_results} items"
 
+                # Build typed response
                 response = APISearchToolResponse(
                     success=True,
                     query=query,
@@ -98,6 +99,7 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
                     total_found=len(results),
                     note=note,
                 )
+                # Only convert to dict at MCP boundary for JSON serialization
                 return response.model_dump()
             else:
                 response = APISearchToolResponse(
