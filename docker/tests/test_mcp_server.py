@@ -6,18 +6,14 @@
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import requests
 
+from tests.factories.http_response_factory import HttpResponseFactory
+
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
-# Mock the imports from mcp_server
-sys.modules["langchain.schema"] = MagicMock()
-sys.modules["readability"] = MagicMock()
-sys.modules["readability.Document"] = MagicMock()
-sys.modules["html2text"] = MagicMock()
 
 
 # Create test class for SearchResult
@@ -73,10 +69,7 @@ class TestMCPServer(unittest.TestCase):
     @patch("requests.get")
     def test_get_content_success(self, mock_get):
         # Setup mocks
-        mock_response = MagicMock()
-        mock_response.content = b"<html><body><p>Test content</p></body></html>"
-        mock_response.headers = {"Content-Type": "text/html"}
-        mock_get.return_value = mock_response
+        mock_get.return_value = HttpResponseFactory.success()
 
         # Call the method
         self.mcp_server.get_content(self.mock_result)
@@ -104,11 +97,9 @@ class TestMCPServer(unittest.TestCase):
     @patch("requests.get")
     def test_get_content_http_error(self, mock_get):
         # Setup the mock to raise an HTTP error
-        mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            "404 Client Error"
+        mock_get.return_value = HttpResponseFactory.with_http_error(
+            404, "404 Client Error"
         )
-        mock_get.return_value = mock_response
 
         # Call the method
         self.mcp_server.get_content(self.mock_result)
@@ -122,11 +113,7 @@ class TestMCPServer(unittest.TestCase):
     @patch("requests.get")
     def test_get_content_plaintext(self, mock_get):
         # Setup mocks for plaintext response
-        mock_response = MagicMock()
-        mock_response.content = b"Plain text content"
-        mock_response.text = "Plain text content"
-        mock_response.headers = {"Content-Type": "text/plain"}
-        mock_get.return_value = mock_response
+        mock_get.return_value = HttpResponseFactory.plaintext("Plain text content")
 
         # Custom implementation to check plaintext handling
         class PlaintextMockServer(MockMCPServer):
@@ -145,15 +132,13 @@ class TestMCPServer(unittest.TestCase):
         self.assertTrue(self.mock_result.content.startswith("# Test Page"))
         self.assertIn("```\nPlain text content\n```", self.mock_result.content)
 
-    def test_process_result(self):
-        # Setup
-        self.mcp_server.get_content = MagicMock()
-
+    @patch.object(MockMCPServer, "get_content")
+    def test_process_result(self, mock_get_content):
         # Call the method
         self.mcp_server.process_result(self.mock_result)
 
         # Assertions
-        self.mcp_server.get_content.assert_called_once_with(self.mock_result)
+        mock_get_content.assert_called_once_with(self.mock_result)
 
 
 if __name__ == "__main__":

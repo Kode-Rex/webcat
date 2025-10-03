@@ -22,6 +22,22 @@ except ImportError:
     )
 
 
+def _convert_ddg_result(result: dict) -> APISearchResult:
+    """Convert DuckDuckGo result format to APISearchResult.
+
+    Args:
+        result: Raw result dictionary from DuckDuckGo
+
+    Returns:
+        APISearchResult object
+    """
+    return APISearchResult(
+        title=result.get("title", "Untitled"),
+        link=result.get("href", ""),
+        snippet=result.get("body", ""),
+    )
+
+
 def fetch_duckduckgo_search_results(
     query: str, max_results: int = 3
 ) -> List[APISearchResult]:
@@ -43,20 +59,8 @@ def fetch_duckduckgo_search_results(
         logger.info(f"Using DuckDuckGo fallback search for: {query}")
 
         with DDGS() as ddgs:
-            # Get search results from DuckDuckGo
-            results = []
             search_results = ddgs.text(query, max_results=max_results)
-
-            for result in search_results:
-                # Convert DuckDuckGo result format to APISearchResult
-                results.append(
-                    APISearchResult(
-                        title=result.get("title", "Untitled"),
-                        link=result.get("href", ""),
-                        snippet=result.get("body", ""),
-                    )
-                )
-
+            results = [_convert_ddg_result(result) for result in search_results]
             logger.info(f"DuckDuckGo returned {len(results)} results")
             return results
 
