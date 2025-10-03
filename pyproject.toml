@@ -37,6 +37,7 @@ dependencies = [
     "fastmcp>=2.7.0",
     "html2text>=2020.1.16",
     "duckduckgo-search>=3.9.0",
+    "trafilatura>=1.6.0",
 ]
 
 [project.optional-dependencies]

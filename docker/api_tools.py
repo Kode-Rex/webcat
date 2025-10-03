@@ -178,7 +178,8 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
             logger.info(f"Processing scrape request for URL: {url}")
 
             # Import the scraping functionality from the main server
-            from mcp_server import SearchResult, scrape_search_result
+            from models.search_result import SearchResult
+            from services.content_scraper import scrape_search_result
 
             # Create a SearchResult object for scraping
             search_result = SearchResult(
@@ -263,7 +264,7 @@ async def _fetch_with_serper(query: str, api_key: str):
     """
     import asyncio
 
-    from mcp_server import fetch_search_results
+    from clients.serper_client import fetch_search_results
 
     logger.info("Using Serper API for search")
     results = await asyncio.get_event_loop().run_in_executor(
@@ -284,7 +285,7 @@ async def _fetch_with_duckduckgo(query: str, has_api_key: bool):
     """
     import asyncio
 
-    from mcp_server import fetch_duckduckgo_search_results
+    from clients.duckduckgo_client import fetch_duckduckgo_search_results
 
     if not has_api_key:
         logger.info("No Serper API key configured, using DuckDuckGo fallback")
@@ -345,7 +346,7 @@ async def _process_and_format_results(results, query: str, search_source: str):
     """
     import asyncio
 
-    from mcp_server import process_search_results
+    from services.search_processor import process_search_results
 
     processed_results = await asyncio.get_event_loop().run_in_executor(
         None, process_search_results, results
@@ -361,8 +362,10 @@ async def _process_and_format_results(results, query: str, search_source: str):
 def create_webcat_functions() -> Dict[str, Any]:
     """Create a dictionary of WebCat functions for the tools to use."""
 
-    # Import the existing functions from the main server
-    from mcp_server import SERPER_API_KEY
+    # Import SERPER_API_KEY from config
+    import os
+
+    SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
 
     async def search_function(query: str) -> Dict[str, Any]:
         """Wrapper for the search functionality."""

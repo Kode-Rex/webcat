@@ -7,10 +7,8 @@
 
 import logging
 
-import html2text
 import requests
-from bs4 import BeautifulSoup
-from readability import Document
+import trafilatura
 
 from constants import MAX_CONTENT_LENGTH, REQUEST_TIMEOUT_SECONDS
 from models.search_result import SearchResult
@@ -69,144 +67,6 @@ def _handle_binary_content(content_type: str, result: SearchResult) -> str:
     return f"# {result.title}\n\n*Source: {result.url}*\n\n**Note:** This content appears to be a binary file ({content_type}) and cannot be converted to markdown. Please download the file directly from the source URL."
 
 
-def _configure_html2text() -> html2text.HTML2Text:
-    """Configure html2text converter with optimal settings.
-
-    Returns:
-        Configured HTML2Text instance
-    """
-    h = html2text.HTML2Text()
-    h.ignore_links = False
-    h.ignore_images = False
-    h.body_width = 0  # No wrapping
-    h.unicode_snob = True  # Use Unicode instead of ASCII
-    h.escape_snob = True  # Don't escape special chars
-    h.use_automatic_links = True  # Auto-link URLs
-    h.mark_code = True  # Use markdown syntax for code blocks
-    h.single_line_break = False  # Use two line breaks for paragraphs
-    h.table_border_style = "html"  # Use HTML table borders
-    h.images_to_alt = False  # Include image URLs
-    h.protect_links = True  # Don't convert links to references
-    return h
-
-
-def _extract_language_from_classes(classes: list) -> str:
-    """Extract programming language from CSS classes.
-
-    Args:
-        classes: List of CSS class names
-
-    Returns:
-        Language identifier or empty string if not found
-    """
-    known_languages = [
-        "python",
-        "javascript",
-        "css",
-        "html",
-        "java",
-        "php",
-        "c",
-        "cpp",
-        "csharp",
-        "ruby",
-        "go",
-    ]
-    for cls in classes:
-        if cls.startswith(("language-", "lang-")):
-            return cls.replace("language-", "").replace("lang-", "")
-        if cls in known_languages:
-            return cls
-    return ""
-
-
-def _process_code_blocks(soup: BeautifulSoup) -> None:
-    """Add language tags to code blocks when possible.
-
-    Args:
-        soup: BeautifulSoup object to modify in-place
-    """
-    for pre in soup.find_all("pre"):
-        if pre.code and pre.code.get("class"):
-            language = _extract_language_from_classes(pre.code.get("class"))
-            if language:
-                pre.insert_before(f"```{language}")
-                pre.insert_after("```")
-
-
-def _process_math_elements(soup: BeautifulSoup) -> None:
-    """Preserve LaTeX/MathJax markup in HTML.
-
-    Args:
-        soup: BeautifulSoup object to modify in-place
-    """
-    math_script_types = [
-        "math/tex",
-        "math/tex; mode=display",
-        "application/x-mathjax-config",
-    ]
-    for math in soup.find_all(["math", "script"]):
-        if math.name == "script" and math.get("type") in math_script_types:
-            math.replace_with(f"$$${math.string}$$$")
-        elif math.name == "math":
-            math.replace_with(f"$$${str(math)}$$$")
-
-
-def _convert_to_markdown(html_content: str, title: str, url: str) -> str:
-    """Convert HTML to markdown with preprocessing.
-
-    Args:
-        html_content: HTML content to convert
-        title: Document title
-        url: Source URL
-
-    Returns:
-        Markdown-formatted content with title and metadata
-    """
-    h = _configure_html2text()
-    soup = BeautifulSoup(html_content, "html.parser")
-    _process_code_blocks(soup)
-    _process_math_elements(soup)
-    markdown_text = h.handle(str(soup))
-    return f"# {title}\n\n*Source: {url}*\n\n{markdown_text}"
-
-
-def _convert_with_readability(response_content: bytes, url: str) -> str:
-    """Extract and convert main content using Readability.
-
-    Args:
-        response_content: Raw HTML bytes from response
-        url: Source URL for metadata
-
-    Returns:
-        Markdown-formatted content
-
-    Raises:
-        Exception: If Readability extraction fails
-    """
-    doc = Document(response_content)
-    title = doc.title()
-    return _convert_to_markdown(doc.summary(), title, url)
-
-
-def _convert_fallback(response_content: bytes, fallback_title: str, url: str) -> str:
-    """Convert HTML to markdown without Readability extraction.
-
-    Args:
-        response_content: Raw HTML bytes from response
-        fallback_title: Title to use if extraction fails
-        url: Source URL for metadata
-
-    Returns:
-        Markdown-formatted content
-    """
-    h = _configure_html2text()
-    soup = BeautifulSoup(response_content, "html.parser")
-    title_tag = soup.find("title")
-    title = title_tag.text if title_tag else fallback_title
-    return f"# {title}\n\n*Source: {url}*\n\n{h.handle(str(soup))}"
-
-
 def _truncate_if_needed(content: str) -> str:
     """Truncate content if it exceeds maximum length.
 
@@ -250,15 +110,32 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
             result.content = _handle_binary_content(content_type, result)
             return result
 
-        try:
-            full_content = _convert_with_readability(response.content, result.url)
-        except Exception as e:
-            logger.warning(
-                f"Readability parsing failed: {str(e)}. Falling back to direct HTML parsing."
-            )
-            full_content = _convert_fallback(response.content, result.title, result.url)
+        # Use Trafilatura for clean article extraction
+        extracted = trafilatura.extract(
+            response.content,
+            output_format="markdown",
+            include_comments=False,
+            include_tables=True,
+            no_fallback=False,
+            url=result.url,
+        )
 
-        result.content = _truncate_if_needed(full_content)
+        if extracted and len(extracted.strip()) > 100:
+            # Remove first line if it's a duplicate title (common in Trafilatura output)
+            lines = extracted.split("\n", 1)
+            if (
+                len(lines) > 1
+                and lines[0].strip().lstrip("#").strip().lower() in result.title.lower()
+            ):
+                extracted = lines[1].lstrip()
+
+            full_content = f"# {result.title}\n\n*Source: {result.url}*\n\n{extracted}"
+            result.content = _truncate_if_needed(full_content)
+            return result
+
+        # Fallback if Trafilatura fails
+        logger.warning(f"Trafilatura extraction failed for {result.url}")
+        result.content = f"# {result.title}\n\n*Source: {result.url}*\n\n{result.snippet}\n\n(Full content extraction failed - only snippet available)"
         return result
     except requests.RequestException as e:
         result.content = f"Error: Failed to retrieve the webpage. {str(e)}"
