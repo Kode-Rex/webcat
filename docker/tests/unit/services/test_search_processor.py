@@ -7,9 +7,9 @@
 
 from unittest.mock import patch
 
-from models.api_search_result import APISearchResult
 from models.search_result import SearchResult
 from services.search_processor import process_search_results
+from tests.builders.api_search_result_builder import an_api_search_result
 
 
 class TestSearchProcessor:
@@ -18,8 +18,12 @@ class TestSearchProcessor:
     @patch("services.search_processor.scrape_search_result")
     def test_processes_single_result(self, mock_scrape):
         # Arrange
-        api_result = APISearchResult(
-            title="Test", link="https://test.com", snippet="Snippet"
+        api_result = (
+            an_api_search_result()
+            .with_title("Test")
+            .with_link("https://test.com")
+            .with_snippet("Snippet")
+            .build()
         )
         scraped = SearchResult(
             title="Test", url="https://test.com", snippet="Snippet", content="Content"
@@ -38,8 +42,16 @@ class TestSearchProcessor:
     def test_processes_multiple_results(self, mock_scrape):
         # Arrange
         api_results = [
-            APISearchResult(title="Test1", link="https://test1.com", snippet="S1"),
-            APISearchResult(title="Test2", link="https://test2.com", snippet="S2"),
+            an_api_search_result()
+            .with_title("Test1")
+            .with_link("https://test1.com")
+            .with_snippet("S1")
+            .build(),
+            an_api_search_result()
+            .with_title("Test2")
+            .with_link("https://test2.com")
+            .with_snippet("S2")
+            .build(),
         ]
         mock_scrape.side_effect = [
             SearchResult(
@@ -70,8 +82,12 @@ class TestSearchProcessor:
     @patch("services.search_processor.scrape_search_result")
     def test_converts_api_result_fields_correctly(self, mock_scrape):
         # Arrange
-        api_result = APISearchResult(
-            title="Original", link="https://orig.com", snippet="Original snippet"
+        api_result = (
+            an_api_search_result()
+            .with_title("Original")
+            .with_link("https://orig.com")
+            .with_snippet("Original snippet")
+            .build()
         )
         mock_scrape.return_value = SearchResult(
             title="Original",

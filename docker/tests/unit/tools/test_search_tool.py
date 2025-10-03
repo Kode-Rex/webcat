@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
-from models.api_search_result import APISearchResult
 from models.search_result import SearchResult
+from tests.builders.api_search_result_builder import an_api_search_result
 from tools.search_tool import search_tool
 
 
@@ -22,9 +22,7 @@ class TestSearchTool:
     @patch("tools.search_tool.fetch_with_fallback")
     async def test_returns_search_results(self, mock_fetch, mock_process):
         # Arrange
-        api_results = [
-            APISearchResult(title="Test", link="https://test.com", snippet="Snippet")
-        ]
+        api_results = [an_api_search_result().build()]
         processed = [
             SearchResult(
                 title="Test",
@@ -64,7 +62,13 @@ class TestSearchTool:
     @patch("tools.search_tool.fetch_with_fallback")
     async def test_processes_results_correctly(self, mock_fetch, mock_process):
         # Arrange
-        api_results = [APISearchResult(title="T", link="L", snippet="S")]
+        api_results = [
+            an_api_search_result()
+            .with_title("T")
+            .with_link("L")
+            .with_snippet("S")
+            .build()
+        ]
         mock_fetch.return_value = (api_results, "Source")
         mock_process.return_value = []
 

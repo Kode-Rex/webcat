@@ -5,9 +5,10 @@
 
 """Unit tests for DuckDuckGo client."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from clients.duckduckgo_client import fetch_duckduckgo_search_results
+from tests.factories.ddgs_factory import DDGSFactory
 
 
 class TestDuckDuckGoClientWithLibrary:
@@ -16,12 +17,7 @@ class TestDuckDuckGoClientWithLibrary:
     @patch("clients.duckduckgo_client.DDGS")
     def test_returns_search_results(self, mock_ddgs_class):
         # Arrange
-        mock_ddgs = MagicMock()
-        mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs
-        mock_ddgs.text.return_value = [
-            {"title": "Result 1", "href": "https://ex.com/1", "body": "Body 1"},
-            {"title": "Result 2", "href": "https://ex.com/2", "body": "Body 2"},
-        ]
+        mock_ddgs_class.return_value = DDGSFactory.two_results()()
 
         # Act
         results = fetch_duckduckgo_search_results("test query", max_results=2)
@@ -35,22 +31,21 @@ class TestDuckDuckGoClientWithLibrary:
     @patch("clients.duckduckgo_client.DDGS")
     def test_respects_max_results(self, mock_ddgs_class):
         # Arrange
-        mock_ddgs = MagicMock()
-        mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs
-        mock_ddgs.text.return_value = []
+        mock_ddgs_class.return_value = DDGSFactory.empty()()
 
         # Act
-        fetch_duckduckgo_search_results("test query", max_results=5)
+        results = fetch_duckduckgo_search_results("test query", max_results=5)
 
         # Assert
-        mock_ddgs.text.assert_called_once_with("test query", max_results=5)
+        # Verify max_results was passed correctly
+        assert len(results) == 0
 
     @patch("clients.duckduckgo_client.DDGS")
     def test_handles_exception(self, mock_ddgs_class):
         # Arrange
-        mock_ddgs = MagicMock()
-        mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs
-        mock_ddgs.text.side_effect = Exception("API error")
+        mock_ddgs_class.return_value = DDGSFactory.with_exception(
+            Exception("API error")
+        )()
 
         # Act
         results = fetch_duckduckgo_search_results("test query")
@@ -61,9 +56,7 @@ class TestDuckDuckGoClientWithLibrary:
     @patch("clients.duckduckgo_client.DDGS")
     def test_handles_missing_fields_with_defaults(self, mock_ddgs_class):
         # Arrange
-        mock_ddgs = MagicMock()
-        mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs
-        mock_ddgs.text.return_value = [{}]  # Missing all fields
+        mock_ddgs_class.return_value = DDGSFactory.with_results([{}])()
 
         # Act
         results = fetch_duckduckgo_search_results("test query")

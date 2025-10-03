@@ -98,12 +98,17 @@ class TestContentScraperErrors:
 class TestContentScraperEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
+    @patch("services.content_scraper.html2text.HTML2Text")
     @patch("services.content_scraper.requests.get")
-    def test_truncates_content_exceeding_max_length(self, mock_get):
+    def test_truncates_content_exceeding_max_length(self, mock_get, mock_html2text):
         # Arrange
         large_content = "<html><body>" + ("x" * 100000) + "</body></html>"
         result = a_search_result().build()
         mock_get.return_value = HttpResponseFactory.success(content=large_content)
+
+        # Mock html2text to return large content
+        mock_h2t_instance = mock_html2text.return_value
+        mock_h2t_instance.handle.return_value = "x" * 100000
 
         # Act
         scraped = scrape_search_result(result)

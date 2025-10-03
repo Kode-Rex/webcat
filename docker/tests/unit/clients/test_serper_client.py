@@ -5,9 +5,10 @@
 
 """Unit tests for Serper client."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from clients.serper_client import fetch_search_results
+from tests.factories.serper_response_factory import SerperResponseFactory
 
 
 class TestSerperClient:
@@ -16,22 +17,7 @@ class TestSerperClient:
     @patch("clients.serper_client.requests.post")
     def test_returns_search_results_from_organic(self, mock_post):
         # Arrange
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "organic": [
-                {
-                    "title": "Result 1",
-                    "link": "https://example.com/1",
-                    "snippet": "Snippet 1",
-                },
-                {
-                    "title": "Result 2",
-                    "link": "https://example.com/2",
-                    "snippet": "Snippet 2",
-                },
-            ]
-        }
-        mock_post.return_value = mock_response
+        mock_post.return_value = SerperResponseFactory.two_results()
 
         # Act
         results = fetch_search_results("test query", "fake_api_key")
@@ -45,9 +31,7 @@ class TestSerperClient:
     @patch("clients.serper_client.requests.post")
     def test_returns_empty_when_no_organic_results(self, mock_post):
         # Arrange
-        mock_response = MagicMock()
-        mock_response.json.return_value = {}
-        mock_post.return_value = mock_response
+        mock_post.return_value = SerperResponseFactory.empty()
 
         # Act
         results = fetch_search_results("test query", "fake_api_key")
@@ -69,9 +53,7 @@ class TestSerperClient:
     @patch("clients.serper_client.requests.post")
     def test_uses_correct_api_endpoint(self, mock_post):
         # Arrange
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"organic": []}
-        mock_post.return_value = mock_response
+        mock_post.return_value = SerperResponseFactory.empty()
 
         # Act
         fetch_search_results("test query", "fake_api_key")
@@ -82,13 +64,7 @@ class TestSerperClient:
     @patch("clients.serper_client.requests.post")
     def test_handles_missing_fields_with_defaults(self, mock_post):
         # Arrange
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "organic": [
-                {},  # Missing all fields
-            ]
-        }
-        mock_post.return_value = mock_response
+        mock_post.return_value = SerperResponseFactory.with_results([{}])
 
         # Act
         results = fetch_search_results("test query", "fake_api_key")
