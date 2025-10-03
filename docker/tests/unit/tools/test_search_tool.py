@@ -5,12 +5,13 @@
 
 """Unit tests for search tool."""
 
-import pytest
 from unittest.mock import patch
 
-from tools.search_tool import search_tool
+import pytest
+
 from models.api_search_result import APISearchResult
 from models.search_result import SearchResult
+from tools.search_tool import search_tool
 
 
 class TestSearchTool:
