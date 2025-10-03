@@ -153,9 +153,7 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
 
         # Limit content length to prevent huge responses
         if len(full_content) > MAX_CONTENT_LENGTH:
-            full_content = (
-                full_content[:MAX_CONTENT_LENGTH] + "... [content truncated]"
-            )
+            full_content = full_content[:MAX_CONTENT_LENGTH] + "... [content truncated]"
 
         result.content = full_content
         return result

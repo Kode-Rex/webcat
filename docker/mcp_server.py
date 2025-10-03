@@ -73,9 +73,9 @@ mcp_server.tool(
     description="Search the web for information using Serper API or DuckDuckGo fallback",
 )(search_tool)
 
-mcp_server.tool(
-    name="health_check", description="Check the health of the server"
-)(health_check_tool)
+mcp_server.tool(name="health_check", description="Check the health of the server")(
+    health_check_tool
+)
 
 
 if __name__ == "__main__":

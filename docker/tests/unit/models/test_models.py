@@ -58,9 +58,7 @@ class TestSearchResponse:
         results = [SearchResult(title="T", url="U", snippet="S")]
 
         # Act
-        response = SearchResponse(
-            query="test", search_source="Serper", results=results
-        )
+        response = SearchResponse(query="test", search_source="Serper", results=results)
 
         # Assert
         assert response.query == "test"
@@ -95,9 +93,7 @@ class TestErrorResponse:
 
     def test_accepts_optional_fields(self):
         # Act
-        response = ErrorResponse(
-            error="Error", query="test query", details="More info"
-        )
+        response = ErrorResponse(error="Error", query="test query", details="More info")
 
         # Assert
         assert response.query == "test query"
