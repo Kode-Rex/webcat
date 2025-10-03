@@ -33,9 +33,7 @@ class TestSearchServiceWithSerperKey:
 
     @patch("services.search_service.fetch_duckduckgo_search_results")
     @patch("services.search_service.fetch_search_results")
-    def test_falls_back_to_ddg_when_serper_returns_empty(
-        self, mock_serper, mock_ddg
-    ):
+    def test_falls_back_to_ddg_when_serper_returns_empty(self, mock_serper, mock_ddg):
         # Arrange
         mock_serper.return_value = []
         mock_ddg.return_value = [
