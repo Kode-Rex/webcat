@@ -182,10 +182,11 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
             from services.content_scraper import scrape_search_result
 
             # Create a SearchResult object for scraping
+            # Title will be extracted from the page during scraping
             search_result = SearchResult(
-                title="Direct URL Scrape",
+                title="",
                 url=url,
-                snippet="Content scraped directly from URL",
+                snippet="",
             )
 
             # Scrape the content
