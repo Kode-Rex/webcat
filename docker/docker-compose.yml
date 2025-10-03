@@ -1,16 +1,13 @@
-version: '3'
-
 services:
   webcat:
     build:
       context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "${PORT:-8000}:${PORT:-8000}"
-      - "${HEALTH_PORT:-8001}:$((${PORT:-8000} + 1))"
+      - "8000:8000"
     environment:
       - SERPER_API_KEY=${SERPER_API_KEY}
-      - PORT=${PORT:-8000}
+      - PORT=8000
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_DIR=/var/log/webcat
       - WEBCAT_MODE=${WEBCAT_MODE:-demo}
@@ -18,7 +15,7 @@ services:
       - ${LOG_DIR:-./logs}:/var/log/webcat
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:$((${PORT:-8000} + 1))/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

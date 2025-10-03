@@ -121,7 +121,7 @@ def _get_server_endpoints() -> dict:
         "sse_demo": "/sse",
         "health": "/health",
         "status": "/status",
-        "demo_client": "/client",
+        "demo_client": "/demo",
     }
 
 
@@ -186,12 +186,12 @@ def _get_root_info() -> dict:
         "version": "2.2.0",
         "description": "Web search and content extraction with MCP protocol support",
         "endpoints": {
-            "demo_client": "/client",
+            "demo_client": "/demo",
             "health": "/health",
             "status": "/status",
             "mcp_sse": "/mcp",
         },
-        "documentation": "Access /client for the demo interface",
+        "documentation": "Access /demo for the demo interface",
     }
 
 
@@ -207,7 +207,7 @@ def setup_health_endpoints(app: FastAPI):
             logger.error(f"Health check failed: {str(e)}")
             return JSONResponse(status_code=500, content=_get_unhealthy_status(str(e)))
 
-    @app.get("/client")
+    @app.get("/demo")
     async def sse_client():
         """Serve the WebCat SSE demo client."""
         try:

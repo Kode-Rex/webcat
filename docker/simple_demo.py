@@ -199,7 +199,7 @@ def create_demo_app():
         allow_headers=["*"],
     )
 
-    # Setup health endpoints (this adds /health, /client, /status, /)
+    # Setup health endpoints (this adds /health, /demo, /status, /)
     setup_health_endpoints(app)
 
     # Initialize FastMCP server
@@ -248,7 +248,7 @@ def run_simple_demo(host: str = "0.0.0.0", port: int = 8000):
     logger.info(f"SSE Demo Endpoint: http://{host}:{port}/sse")
     logger.info(f"FastMCP Endpoint: http://{host}:{port}/mcp")
     logger.info(f"Health Check: http://{host}:{port}/health")
-    logger.info(f"Demo Client: http://{host}:{port}/client")
+    logger.info(f"Demo Client: http://{host}:{port}/demo")
     logger.info(f"Server Status: http://{host}:{port}/status")
 
     print("\n🐱 WebCat MCP Demo Server Starting...")
@@ -256,7 +256,7 @@ def run_simple_demo(host: str = "0.0.0.0", port: int = 8000):
     print(f"🔗 SSE Demo: http://{host}:{port}/sse")
     print(f"🛠️ FastMCP: http://{host}:{port}/mcp")
     print(f"💗 Health: http://{host}:{port}/health")
-    print(f"🎨 Demo UI: http://{host}:{port}/client")
+    print(f"🎨 Demo UI: http://{host}:{port}/demo")
     print(f"📊 Server Status: http://{host}:{port}/status")
     print("\n✨ Ready for connections!")
 

@@ -282,14 +282,14 @@ def run_demo_server(host: str = "0.0.0.0", port: int = 8000):
     logger.info(f"SSE Demo Endpoint: http://{host}:{port}/sse")
     logger.info(f"FastMCP Endpoint: http://{host}:{port}/mcp")
     logger.info(f"Health endpoints: http://{host}:{port + 1}/health")
-    logger.info(f"Demo Client: http://{host}:{port + 1}/client")
+    logger.info(f"Demo Client: http://{host}:{port + 1}/demo")
 
     print("\n🐱 WebCat MCP Demo Server Starting...")
     print(f"📡 Main Server: http://{host}:{port}")
     print(f"🔗 SSE Demo: http://{host}:{port}/sse")
     print(f"🛠️ FastMCP: http://{host}:{port}/mcp")
     print(f"💗 Health: http://{host}:{port + 1}/health")
-    print(f"🎨 Demo UI: http://{host}:{port + 1}/client")
+    print(f"🎨 Demo UI: http://{host}:{port + 1}/demo")
     print(f"📊 Server Status: http://{host}:{port + 1}/status")
     print("\n✨ Ready for connections!")
 
