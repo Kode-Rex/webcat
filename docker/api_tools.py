@@ -251,79 +251,146 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
             return response.model_dump()
 
 
+async def _fetch_with_serper(query: str, api_key: str):
+    """Fetch search results using Serper API.
+
+    Args:
+        query: Search query
+        api_key: Serper API key
+
+    Returns:
+        Tuple of (results, search_source)
+    """
+    import asyncio
+
+    from mcp_server import fetch_search_results
+
+    logger.info("Using Serper API for search")
+    results = await asyncio.get_event_loop().run_in_executor(
+        None, fetch_search_results, query, api_key
+    )
+    return results, "Serper API"
+
+
+async def _fetch_with_duckduckgo(query: str, has_api_key: bool):
+    """Fetch search results using DuckDuckGo.
+
+    Args:
+        query: Search query
+        has_api_key: Whether Serper API key was configured
+
+    Returns:
+        Tuple of (results, search_source)
+    """
+    import asyncio
+
+    from mcp_server import fetch_duckduckgo_search_results
+
+    if not has_api_key:
+        logger.info("No Serper API key configured, using DuckDuckGo fallback")
+    else:
+        logger.warning("No results from Serper API, trying DuckDuckGo fallback")
+
+    results = await asyncio.get_event_loop().run_in_executor(
+        None, fetch_duckduckgo_search_results, query
+    )
+    return results, "DuckDuckGo (free fallback)"
+
+
+def _format_no_results_error(query: str, search_source: str) -> dict:
+    """Format error response for no results.
+
+    Args:
+        query: Search query
+        search_source: Source that was used
+
+    Returns:
+        Error dictionary
+    """
+    return {
+        "error": "No search results found from any source.",
+        "query": query,
+        "search_source": search_source,
+    }
+
+
+def _format_search_error(error: str, query: str, search_source: str) -> dict:
+    """Format error response for search failure.
+
+    Args:
+        error: Error message
+        query: Search query
+        search_source: Source that was attempted
+
+    Returns:
+        Error dictionary
+    """
+    return {
+        "error": f"Search failed: {error}",
+        "query": query,
+        "search_source": search_source,
+    }
+
+
+async def _process_and_format_results(results, query: str, search_source: str):
+    """Process search results and format response.
+
+    Args:
+        results: Raw search results
+        query: Search query
+        search_source: Source of results
+
+    Returns:
+        Formatted results dictionary
+    """
+    import asyncio
+
+    from mcp_server import process_search_results
+
+    processed_results = await asyncio.get_event_loop().run_in_executor(
+        None, process_search_results, results
+    )
+
+    return {
+        "query": query,
+        "search_source": search_source,
+        "results": [result.model_dump() for result in processed_results],
+    }
+
+
 def create_webcat_functions() -> Dict[str, Any]:
     """Create a dictionary of WebCat functions for the tools to use."""
 
     # Import the existing functions from the main server
-    from mcp_server import (
-        SERPER_API_KEY,
-        fetch_duckduckgo_search_results,
-        fetch_search_results,
-        process_search_results,
-    )
+    from mcp_server import SERPER_API_KEY
 
     async def search_function(query: str) -> Dict[str, Any]:
         """Wrapper for the search functionality."""
-        import asyncio
-
         results = []
         search_source = "Unknown"
 
         try:
             # Try Serper API first if key is available
             if SERPER_API_KEY:
-                logger.info("Using Serper API for search")
-                search_source = "Serper API"
-                # Run the synchronous function in a thread pool
-                results = await asyncio.get_event_loop().run_in_executor(
-                    None, fetch_search_results, query, SERPER_API_KEY
-                )
+                results, search_source = await _fetch_with_serper(query, SERPER_API_KEY)
 
             # Fall back to DuckDuckGo if no API key or no results from Serper
             if not results:
-                if not SERPER_API_KEY:
-                    logger.info(
-                        "No Serper API key configured, using DuckDuckGo fallback"
-                    )
-                else:
-                    logger.warning(
-                        "No results from Serper API, trying DuckDuckGo fallback"
-                    )
-
-                search_source = "DuckDuckGo (free fallback)"
-                # Run the synchronous function in a thread pool
-                results = await asyncio.get_event_loop().run_in_executor(
-                    None, fetch_duckduckgo_search_results, query
+                results, search_source = await _fetch_with_duckduckgo(
+                    query, bool(SERPER_API_KEY)
                 )
 
             # Check if we got any results
             if not results:
                 logger.warning(f"No search results found for query: {query}")
-                return {
-                    "error": "No search results found from any source.",
-                    "query": query,
-                    "search_source": search_source,
-                }
+                return _format_no_results_error(query, search_source)
 
-            # Process the results in thread pool (since it involves web scraping)
-            processed_results = await asyncio.get_event_loop().run_in_executor(
-                None, process_search_results, results
-            )
-
-            # Return formatted results
-            return {
-                "query": query,
-                "search_source": search_source,
-                "results": [result.model_dump() for result in processed_results],
-            }
+            # Process and format results
+            return await _process_and_format_results(results, query, search_source)
 
         except Exception as e:
             logger.error(f"Error in search function: {str(e)}")
-            return {
-                "error": f"Search failed: {str(e)}",
-                "query": query,
-                "search_source": search_source,
-            }
+            return _format_search_error(str(e), query, search_source)
 
     async def health_check_function() -> Dict[str, Any]:
         """Wrapper for the health check functionality."""
