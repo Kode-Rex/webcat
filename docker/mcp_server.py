@@ -44,6 +44,8 @@ import os
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
+from tools.health_check_tool import health_check_tool
+from tools.search_tool import search_tool
 from utils.logging_config import setup_logging
 
 # Set up logging
@@ -58,10 +60,6 @@ SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
 logging.info(
     f"SERPER API key: {'Set' if SERPER_API_KEY else 'Not set (using DuckDuckGo fallback)'}"
 )
-
-# Import and register MCP tools
-from tools.health_check_tool import health_check_tool
-from tools.search_tool import search_tool
 
 # Create FastMCP instance (no authentication required)
 mcp_server = FastMCP("WebCat Search")
