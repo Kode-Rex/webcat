@@ -220,8 +220,6 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
             Dict representation of APIServerInfoResponse model
         """
         try:
-            import os
-
             logger.info("Processing server info request")
 
             features = [
