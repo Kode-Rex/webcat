@@ -7,8 +7,6 @@
 
 from unittest.mock import patch
 
-import pytest
-
 from models.api_search_result import APISearchResult
 from services.search_service import fetch_with_fallback
 

@@ -59,13 +59,12 @@ logging.info(
     f"SERPER API key: {'Set' if SERPER_API_KEY else 'Not set (using DuckDuckGo fallback)'}"
 )
 
-# Create FastMCP instance (no authentication required)
-mcp_server = FastMCP("WebCat Search")
-
-
 # Import and register MCP tools
 from tools.health_check_tool import health_check_tool
 from tools.search_tool import search_tool
+
+# Create FastMCP instance (no authentication required)
+mcp_server = FastMCP("WebCat Search")
 
 # Register tools with MCP server
 mcp_server.tool(

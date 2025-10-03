@@ -7,8 +7,6 @@
 
 from unittest.mock import patch
 
-import pytest
-
 from constants import MAX_CONTENT_LENGTH
 from services.content_scraper import scrape_search_result
 from tests.builders.search_result_builder import a_search_result

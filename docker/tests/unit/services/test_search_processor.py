@@ -7,8 +7,6 @@
 
 from unittest.mock import patch
 
-import pytest
-
 from models.api_search_result import APISearchResult
 from models.search_result import SearchResult
 from services.search_processor import process_search_results
@@ -83,7 +81,7 @@ class TestSearchProcessor:
         )
 
         # Act
-        results = process_search_results([api_result])
+        process_search_results([api_result])
 
         # Assert
         call_args = mock_scrape.call_args[0][0]
