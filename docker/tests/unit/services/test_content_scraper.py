@@ -112,3 +112,29 @@ class TestContentScraperEdgeCases:
         # Assert
         assert "[content truncated]" in scraped.content
         assert len(scraped.content) <= MAX_CONTENT_LENGTH + 100  # Some buffer
+
+    @patch("services.content_scraper.requests.get")
+    def test_handles_connection_error(self, mock_get):
+        # Arrange
+        result = a_search_result().build()
+        mock_get.side_effect = HttpResponseFactory.connection_error()
+
+        # Act
+        scraped = scrape_search_result(result)
+
+        # Assert
+        assert "Error: Failed to retrieve" in scraped.content
+
+    @patch("services.content_scraper.requests.get")
+    def test_handles_readability_failure_with_fallback(self, mock_get):
+        # Arrange - malformed HTML that readability might reject
+        bad_html = "<html><body><<<<>>>>>nonsense</body></html>"
+        result = a_search_result().build()
+        mock_get.return_value = HttpResponseFactory.success(content=bad_html)
+
+        # Act
+        scraped = scrape_search_result(result)
+
+        # Assert
+        # Should still produce some content via fallback
+        assert scraped.content != ""
