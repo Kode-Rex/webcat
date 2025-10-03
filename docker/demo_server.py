@@ -61,6 +61,146 @@ logger.addHandler(file_handler)
 logger.info("Demo server logging initialized")
 
 
+def _format_sse_message(message_type: str, **kwargs) -> str:
+    """Format SSE message.
+
+    Args:
+        message_type: Message type
+        **kwargs: Additional message fields
+
+    Returns:
+        Formatted SSE message string
+    """
+    data = {"type": message_type, **kwargs}
+    return f"data: {json.dumps(data)}\n\n"
+
+
+async def _handle_search_operation(search_func, query: str, max_results: int):
+    """Handle search operation and yield results.
+
+    Args:
+        search_func: Search function to call
+        query: Search query
+        max_results: Maximum results to return
+
+    Yields:
+        SSE formatted messages
+    """
+    yield _format_sse_message("status", message=f"Searching for: {query}")
+
+    result = await search_func(query)
+
+    # Limit results if needed
+    if result.get("results") and len(result["results"]) > max_results:
+        result["results"] = result["results"][:max_results]
+        result["note"] = f"Results limited to {max_results} items"
+
+    yield _format_sse_message("data", data=result)
+    num_results = len(result.get("results", []))
+    yield _format_sse_message(
+        "complete", message=f"Search completed. Found {num_results} results."
+    )
+
+
+async def _handle_health_operation(health_func):
+    """Handle health check operation.
+
+    Args:
+        health_func: Health check function to call (or None)
+
+    Yields:
+        SSE formatted messages
+    """
+    yield _format_sse_message("status", message="Checking server health...")
+
+    if health_func:
+        result = await health_func()
+        yield _format_sse_message("data", data=result)
+        yield _format_sse_message("complete", message="Health check completed")
+    else:
+        basic_health = {
+            "status": "healthy",
+            "service": "webcat-demo",
+            "timestamp": time.time(),
+        }
+        yield _format_sse_message("data", data=basic_health)
+        yield _format_sse_message("complete", message="Basic health check completed")
+
+
+def _get_server_info() -> dict:
+    """Get server information dictionary.
+
+    Returns:
+        Server info dictionary
+    """
+    return {
+        "service": "WebCat MCP Demo Server",
+        "version": "2.2.0",
+        "status": "connected",
+        "operations": ["search", "health"],
+        "timestamp": time.time(),
+    }
+
+
+async def _generate_webcat_stream(
+    webcat_functions, operation: str, query: str, max_results: int
+):
+    """Generate SSE stream for WebCat operations.
+
+    Args:
+        webcat_functions: Dictionary of WebCat functions
+        operation: Operation to perform
+        query: Search query
+        max_results: Maximum results
+
+    Yields:
+        SSE formatted messages
+    """
+    try:
+        # Send connection message
+        yield _format_sse_message(
+            "connection",
+            status="connected",
+            message="WebCat stream started",
+            operation=operation,
+        )
+
+        if operation == "search" and query:
+            search_func = webcat_functions.get("search")
+            if search_func:
+                async for msg in _handle_search_operation(
+                    search_func, query, max_results
+                ):
+                    yield msg
+            else:
+                yield _format_sse_message(
+                    "error", message="Search function not available"
+                )
+
+        elif operation == "health":
+            health_func = webcat_functions.get("health_check")
+            async for msg in _handle_health_operation(health_func):
+                yield msg
+
+        else:
+            # Just connection - send server info
+            yield _format_sse_message("data", data=_get_server_info())
+            yield _format_sse_message("complete", message="Connection established")
+
+        # Keep alive with heartbeat
+        heartbeat_count = 0
+        while True:
+            await asyncio.sleep(30)
+            heartbeat_count += 1
+            yield _format_sse_message(
+                "heartbeat", timestamp=time.time(), count=heartbeat_count
+            )
+
+    except Exception as e:
+        logger.error(f"Error in SSE stream: {str(e)}")
+        yield _format_sse_message("error", message=str(e))
+
+
 async def run_server():
     """Create and configure the FastAPI app with SSE support."""
 
@@ -99,78 +239,8 @@ async def run_server():
         max_results: int = Query(5, description="Maximum number of search results"),
     ):
         """Stream WebCat functionality via SSE"""
-
-        async def generate_webcat_stream():
-            try:
-                # Send connection message
-                yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'message': 'WebCat stream started', 'operation': operation})}\n\n"
-
-                if operation == "search" and query:
-                    # Perform search operation
-                    yield f"data: {json.dumps({'type': 'status', 'message': f'Searching for: {query}'})}\n\n"
-
-                    # Call the search function
-                    search_func = webcat_functions.get("search")
-                    if search_func:
-                        result = await search_func(query)
-
-                        # Limit results if specified
-                        if (
-                            result.get("results")
-                            and len(result["results"]) > max_results
-                        ):
-                            result["results"] = result["results"][:max_results]
-                            result["note"] = f"Results limited to {max_results} items"
-
-                        yield f"data: {json.dumps({'type': 'data', 'data': result})}\n\n"
-                        num_results = len(result.get("results", []))
-                        yield f"data: {json.dumps({'type': 'complete', 'message': f'Search completed. Found {num_results} results.'})}\n\n"
-                    else:
-                        yield f"data: {json.dumps({'type': 'error', 'message': 'Search function not available'})}\n\n"
-
-                elif operation == "health":
-                    # Perform health check
-                    yield f"data: {json.dumps({'type': 'status', 'message': 'Checking server health...'})}\n\n"
-
-                    health_func = webcat_functions.get("health_check")
-                    if health_func:
-                        result = await health_func()
-                        yield f"data: {json.dumps({'type': 'data', 'data': result})}\n\n"
-                        yield f"data: {json.dumps({'type': 'complete', 'message': 'Health check completed'})}\n\n"
-                    else:
-                        basic_health = {
-                            "status": "healthy",
-                            "service": "webcat-demo",
-                            "timestamp": time.time(),
-                        }
-                        yield f"data: {json.dumps({'type': 'data', 'data': basic_health})}\n\n"
-                        yield f"data: {json.dumps({'type': 'complete', 'message': 'Basic health check completed'})}\n\n"
-
-                else:
-                    # Just connection - send server info
-                    server_info = {
-                        "service": "WebCat MCP Demo Server",
-                        "version": "2.2.0",
-                        "status": "connected",
-                        "operations": ["search", "health"],
-                        "timestamp": time.time(),
-                    }
-                    yield f"data: {json.dumps({'type': 'data', 'data': server_info})}\n\n"
-                    yield f"data: {json.dumps({'type': 'complete', 'message': 'Connection established'})}\n\n"
-
-                # Keep alive with heartbeat
-                heartbeat_count = 0
-                while True:
-                    await asyncio.sleep(30)
-                    heartbeat_count += 1
-                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': time.time(), 'count': heartbeat_count})}\n\n"
-
-            except Exception as e:
-                logger.error(f"Error in SSE stream: {str(e)}")
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-
         return StreamingResponse(
-            generate_webcat_stream(),
+            _generate_webcat_stream(webcat_functions, operation, query, max_results),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
