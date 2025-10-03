@@ -217,6 +217,37 @@ def _convert_to_markdown(html_content: str, title: str, url: str) -> str:
     return f"# {title}\n\n*Source: {url}*\n\n{markdown_text}"
 
 
+def _extract_main_text(soup: BeautifulSoup) -> str:
+    """Extract just the text content without markup.
+
+    Args:
+        soup: BeautifulSoup object
+
+    Returns:
+        Plain text content with basic formatting
+    """
+    # Get all paragraph, heading, and list text
+    text_parts = []
+
+    for elem in soup.find_all(
+        ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "pre"]
+    ):
+        text = elem.get_text(strip=True)
+        if text and len(text) > 20:  # Only include substantial text
+            if elem.name.startswith("h"):
+                # Headings
+                level = "#" * int(elem.name[1])
+                text_parts.append(f"\n{level} {text}\n")
+            elif elem.name == "blockquote":
+                text_parts.append(f"\n> {text}\n")
+            elif elem.name == "pre":
+                text_parts.append(f"\n```\n{text}\n```\n")
+            else:
+                text_parts.append(text)
+
+    return "\n\n".join(text_parts)
+
+
 def _convert_with_readability(response_content: bytes, url: str) -> str:
     """Extract and convert main content using Readability.
 
@@ -232,7 +263,15 @@ def _convert_with_readability(response_content: bytes, url: str) -> str:
     """
     doc = Document(response_content)
     title = doc.title()
-    return _convert_to_markdown(doc.summary(), title, url)
+
+    # Parse Readability's cleaned HTML
+    soup = BeautifulSoup(doc.summary(), "html.parser")
+    _clean_soup(soup)  # Remove any remaining navigation
+
+    # Extract just the meaningful text
+    content = _extract_main_text(soup)
+
+    return f"# {title}\n\n*Source: {url}*\n\n{content}"
 
 
 def _convert_fallback(response_content: bytes, fallback_title: str, url: str) -> str:
