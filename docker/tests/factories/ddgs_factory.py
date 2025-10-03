@@ -7,7 +7,8 @@
 
 from typing import Any, Dict, List
 
-from tests.factories.mock_ddgs import MockDDGS, MockDDGSClass
+from tests.factories.mock_ddgs_class import MockDDGSClass
+from tests.factories.mock_ddgs_search_client import MockDDGS
 
 
 class DDGSFactory:

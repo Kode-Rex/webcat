@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Typed mock for DuckDuckGo Search (DDGS) - no raw property assignment."""
+"""Typed mock for DDGS search client - no raw property assignment."""
 
 from typing import Any, Dict, List, Optional
 
@@ -45,31 +45,3 @@ class MockDDGS:
             raise self._should_raise
 
         return self._results
-
-
-class MockDDGSContextManager:
-    """Mock context manager for DDGS."""
-
-    def __init__(self, ddgs_instance: MockDDGS):
-        """Initialize with DDGS instance."""
-        self._ddgs = ddgs_instance
-
-    def __enter__(self) -> MockDDGS:
-        """Enter context manager."""
-        return self._ddgs
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit context manager."""
-        pass
-
-
-class MockDDGSClass:
-    """Mock DDGS class that returns context manager."""
-
-    def __init__(self, ddgs_instance: MockDDGS):
-        """Initialize with DDGS instance."""
-        self._ddgs = ddgs_instance
-
-    def __call__(self, *args, **kwargs) -> MockDDGSContextManager:
-        """Return context manager when instantiated."""
-        return MockDDGSContextManager(self._ddgs)
