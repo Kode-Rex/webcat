@@ -63,7 +63,11 @@ class TestSearchTool:
     async def test_processes_results_correctly(self, mock_fetch, mock_process):
         # Arrange
         api_results = [
-            an_api_search_result().with_title("T").with_link("L").with_snippet("S").build()
+            an_api_search_result()
+            .with_title("T")
+            .with_link("L")
+            .with_snippet("S")
+            .build()
         ]
         mock_fetch.return_value = (api_results, "Source")
         mock_process.return_value = []
