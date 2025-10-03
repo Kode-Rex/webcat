@@ -7,8 +7,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from clients.duckduckgo_client import fetch_duckduckgo_search_results
 
 

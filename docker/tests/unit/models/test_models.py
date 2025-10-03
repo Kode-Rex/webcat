@@ -5,8 +5,6 @@
 
 """Unit tests for Pydantic models."""
 
-import pytest
-
 from models.api_search_result import APISearchResult
 from models.error_response import ErrorResponse
 from models.health_check_response import HealthCheckResponse

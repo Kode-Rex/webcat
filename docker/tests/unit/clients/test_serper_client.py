@@ -7,8 +7,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from clients.serper_client import fetch_search_results
 
 

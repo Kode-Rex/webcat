@@ -7,10 +7,6 @@
 
 import logging
 import os
-import tempfile
-from pathlib import Path
-
-import pytest
 
 from utils.logging_config import setup_logging
 
