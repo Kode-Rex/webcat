@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Unit tests for DuckDuckGo client."""
+"""Unit tests for DuckDuckGo client when library is available."""
 
 from unittest.mock import patch
 
@@ -66,15 +66,3 @@ class TestDuckDuckGoClientWithLibrary:
         assert results[0].title == "Untitled"
         assert results[0].link == ""
         assert results[0].snippet == ""
-
-
-class TestDuckDuckGoClientWithoutLibrary:
-    """Tests when duckduckgo-search library is not available."""
-
-    @patch("clients.duckduckgo_client.DDGS", None)
-    def test_returns_empty_when_library_missing(self):
-        # Act
-        results = fetch_duckduckgo_search_results("test query")
-
-        # Assert
-        assert len(results) == 0

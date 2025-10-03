@@ -3,19 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""SearchResponse model - response from the search tool."""
+"""Search response model.
 
-from typing import List, Optional
+DEPRECATED: Import from models.responses.search_response instead.
+"""
 
-from pydantic import BaseModel
+import warnings
 
-from models.search_result import SearchResult
+from models.responses.search_response import SearchResponse
 
+warnings.warn(
+    "Importing from 'models.search_response' is deprecated. Use 'models.responses.search_response' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-class SearchResponse(BaseModel):
-    """Response from the search tool."""
-
-    query: str
-    search_source: str
-    results: List[SearchResult]
-    error: Optional[str] = None
+__all__ = ["SearchResponse"]
