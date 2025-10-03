@@ -5,8 +5,9 @@
 
 """Unit tests for Serper client."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from clients.serper_client import fetch_search_results
 

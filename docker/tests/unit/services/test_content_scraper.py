@@ -5,8 +5,9 @@
 
 """Unit tests for content scraper service."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from constants import MAX_CONTENT_LENGTH
 from services.content_scraper import scrape_search_result

@@ -5,12 +5,13 @@
 
 """Unit tests for search processor service."""
 
-import pytest
 from unittest.mock import patch
 
-from services.search_processor import process_search_results
+import pytest
+
 from models.api_search_result import APISearchResult
 from models.search_result import SearchResult
+from services.search_processor import process_search_results
 
 
 class TestSearchProcessor:

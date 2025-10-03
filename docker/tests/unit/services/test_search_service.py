@@ -5,11 +5,12 @@
 
 """Unit tests for search service."""
 
-import pytest
 from unittest.mock import patch
 
-from services.search_service import fetch_with_fallback
+import pytest
+
 from models.api_search_result import APISearchResult
+from services.search_service import fetch_with_fallback
 
 
 class TestSearchServiceWithSerperKey:
