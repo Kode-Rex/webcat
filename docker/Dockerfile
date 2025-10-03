@@ -1,12 +1,12 @@
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Copy project metadata and structure
 COPY pyproject.toml README.md LICENSE /app/
 
-# Copy docker module (source code)
-COPY docker/*.py /app/docker/
+# Copy docker module (source code and all subdirectories)
+COPY docker/ /app/docker/
 
 # Copy examples
 COPY examples/ /app/examples/
@@ -25,9 +25,8 @@ ENV LOG_LEVEL=INFO
 ENV LOG_DIR=/var/log/webcat
 ENV WEBCAT_MODE=demo
 
-# Expose the configurable port and health port
-EXPOSE ${PORT}
-EXPOSE $((${PORT} + 1))
+# Expose the port
+EXPOSE 8000
 
 # Set working directory to docker module for runtime
 WORKDIR /app/docker
