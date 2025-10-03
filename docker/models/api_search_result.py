@@ -3,20 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""APISearchResult model - raw search result from external APIs."""
+"""API search result model.
 
-from pydantic import BaseModel
+DEPRECATED: Import from models.domain.api_search_result instead.
+"""
 
+import warnings
 
-class APISearchResult(BaseModel):
-    """Raw search result from external API (Serper/DuckDuckGo)."""
+from models.domain.api_search_result import APISearchResult
 
-    title: str
-    link: str
-    snippet: str
+warnings.warn(
+    "Importing from 'models.api_search_result' is deprecated. Use 'models.domain.api_search_result' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    class Config:
-        """Pydantic config."""
-
-        # Allow both 'link', 'url', and 'href' for compatibility
-        extra = "allow"
+__all__ = ["APISearchResult"]

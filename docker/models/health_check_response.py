@@ -3,13 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""HealthCheckResponse model - response from health check tool."""
+"""Health check response model.
 
-from pydantic import BaseModel
+DEPRECATED: Import from models.responses.health_check_response instead.
+"""
 
+import warnings
 
-class HealthCheckResponse(BaseModel):
-    """Response from health check tool."""
+from models.responses.health_check_response import HealthCheckResponse
 
-    status: str
-    service: str
+warnings.warn(
+    "Importing from 'models.health_check_response' is deprecated. Use 'models.responses.health_check_response' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+__all__ = ["HealthCheckResponse"]
