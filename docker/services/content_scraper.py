@@ -121,6 +121,14 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
         )
 
         if extracted and len(extracted.strip()) > 100:
+            # Remove first line if it's a duplicate title (common in Trafilatura output)
+            lines = extracted.split("\n", 1)
+            if (
+                len(lines) > 1
+                and lines[0].strip().lstrip("#").strip().lower() in result.title.lower()
+            ):
+                extracted = lines[1].lstrip()
+
             full_content = f"# {result.title}\n\n*Source: {result.url}*\n\n{extracted}"
             result.content = _truncate_if_needed(full_content)
             return result
