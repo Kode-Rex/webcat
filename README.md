@@ -1,139 +1,225 @@
-# Web Cat MCP
+# WebCat MCP Server
 
-## Introduction
+**Web search and content extraction for AI models via Model Context Protocol (MCP)**
 
-Web Cat is a collection of Python-based APIs designed to enhance AI models with web search and content extraction capabilities. The project includes:
-
-1. A serverless Python-based API hosted on Azure Functions
-2. A Model Context Protocol (MCP) server that provides web search capabilities for AI models
-
-Both implementations are designed to responsibly scrape and process website content, making it easy to integrate web content into AI applications like ChatGPT through Custom GPTs.
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/Kode-Rex/webcat)
+[![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://hub.docker.com/r/tmfrisinger/webcat)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## Quick Start
 
-**🚀 Try WebCat in 30 seconds:**
-
 ```bash
-# Run the demo server
+# Run WebCat with Docker (30 seconds to working demo)
 docker run -p 8000:8000 tmfrisinger/webcat:latest
 
-# Open the demo client in your browser
-open http://localhost:8000/client
+# Open demo client
+open http://localhost:8000/demo
 ```
 
 ![WebCat Demo Client](assets/webcat-demo-client.png)
 
-The demo client provides an interactive interface to test web searches, view real-time results, and explore all WebCat features!
+## What is WebCat?
 
-## Components
+WebCat is an **MCP (Model Context Protocol) server** that provides AI models with:
+- 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free)
+- 📄 **Content Extraction** - Clean markdown conversion with Trafilatura
+- 🌐 **SSE Streaming** - Real-time results via Server-Sent Events
+- 🎨 **Demo UI** - Interactive testing interface
 
-### Azure Functions API
-
-The Azure Functions API leverages the readability library and BeautifulSoup to extract the main body of text and related images from web pages.
-
-### MCP Server
-
-The Model Context Protocol (MCP) server is a FastAPI-based implementation that provides web search capabilities with enhanced content extraction. It follows the MCP specification for standardized AI model interactions and uses SSE transport for compatibility with LiteLLM and other MCP clients.
+Built with **FastAPI** and **FastMCP** for seamless AI integration.
 
 ## Features
- - **Content Extraction**: Utilizes the readability library for clean text extraction
- - **Text Processing**: Further processes extracted content for improved usability
- - **Search Functionality**: Integrates with Serper.dev to provide web search capabilities
- - **Free Fallback**: Automatically falls back to DuckDuckGo search when no API key is configured
- - **MCP Compliance**: Follows standardized Model Context Protocol specifications
- - **Multiple API Styles**: Supports both Server-Sent Events (SSE) streaming and RESTful endpoints
- - **Rate Limiting**: Protects the API from abuse with configurable rate limits
- - **API Versioning**: Ensures backward compatibility as the API evolves
- - **Docker Support**: Easy deployment with Docker containers
- - **Parallel Processing**: Faster response times with parallel search result processing
- - **Comprehensive Testing**: Includes unit tests for core functionality
 
-## Getting Started
+- ✅ **No Authentication Required** - Simple setup
+- ✅ **Automatic Fallback** - Serper API → DuckDuckGo if needed
+- ✅ **Smart Content Extraction** - Trafilatura removes navigation/ads/chrome
+- ✅ **MCP Compliant** - Works with Claude Desktop, LiteLLM, etc.
+- ✅ **Rate Limited** - Configurable protection
+- ✅ **Docker Ready** - One command deployment
+- ✅ **Parallel Processing** - Fast concurrent scraping
 
-### Azure Functions API
-- See the `customgpt` directory for specific documentation
+## Installation & Usage
 
-### MCP Server (Docker)
-- Current version: 2.2.0 (simplified - no authentication required)
-- Docker image: `tmfrisinger/webcat:2.2.0` or `tmfrisinger/webcat:latest`
+### Docker (Recommended)
 
-#### Running with Docker
 ```bash
-# Run with Serper API (recommended for best results)
+# With Serper API (best results)
 docker run -p 8000:8000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:2.2.0
 
-# Run with free DuckDuckGo fallback (no API key required)
+# Free tier (DuckDuckGo only)
 docker run -p 8000:8000 tmfrisinger/webcat:2.2.0
 
-# Run on a custom port
-docker run -p 9000:9000 -e PORT=9000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:2.2.0
-
-# With custom rate limiting
-docker run -p 8000:8000 -e SERPER_API_KEY=your_key -e RATE_LIMIT_WINDOW=60 -e RATE_LIMIT_MAX_REQUESTS=10 tmfrisinger/webcat:2.2.0
+# Custom configuration
+docker run -p 9000:9000 \
+  -e PORT=9000 \
+  -e SERPER_API_KEY=your_key \
+  -e RATE_LIMIT_WINDOW=60 \
+  -e RATE_LIMIT_MAX_REQUESTS=10 \
+  tmfrisinger/webcat:2.2.0
 ```
 
-For more detailed Docker information, see the `docker/README.md` file.
+### Local Development
 
-#### Demo Client & Endpoints
+```bash
+cd docker
+python -m pip install -e ".[dev]"
 
-Once the server is running, you can access:
+# Start MCP server
+python mcp_server.py
 
-- **🎨 Demo Client**: [http://localhost:8000/client](http://localhost:8000/client) - Interactive web interface for testing
-- **💗 Health Check**: [http://localhost:8000/health](http://localhost:8000/health) - Server health status
-- **📊 Server Status**: [http://localhost:8000/status](http://localhost:8000/status) - Detailed server information
-- **🔗 SSE Endpoint**: [http://localhost:8000/sse](http://localhost:8000/sse) - Server-Sent Events for real-time search
-- **🛠️ FastMCP**: [http://localhost:8000/mcp](http://localhost:8000/mcp) - MCP protocol endpoint
+# Or start demo server with UI
+python simple_demo.py
+```
 
-The demo client provides a user-friendly interface to test web searches with real-time results, health monitoring, and connection management.
+## Available Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `http://localhost:8000/demo` | 🎨 Interactive demo UI |
+| `http://localhost:8000/health` | 💗 Health check |
+| `http://localhost:8000/status` | 📊 Server status |
+| `http://localhost:8000/mcp` | 🛠️ MCP protocol endpoint |
+| `http://localhost:8000/sse` | 🔗 SSE streaming |
 
 ## Configuration
 
 ### Environment Variables
-- `SERPER_API_KEY`: Your Serper API key (optional, enables premium search results)
-- `PORT`: The port to run the server on (default: 8000)
-- `RATE_LIMIT_WINDOW`: Time window in seconds for rate limiting (default: 60)
-- `RATE_LIMIT_MAX_REQUESTS`: Max requests per window (default: 10)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional) |
+| `PORT` | `8000` | Server port |
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `LOG_DIR` | `/tmp` | Log file directory |
+| `RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
+| `RATE_LIMIT_MAX_REQUESTS` | `10` | Max requests per window |
+
+### Get a Serper API Key
+
+1. Visit [serper.dev](https://serper.dev)
+2. Sign up for free tier (2,500 searches/month)
+3. Copy your API key
+4. Pass to Docker: `-e SERPER_API_KEY=your_key`
+
+## MCP Tools
+
+WebCat exposes these tools via MCP:
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `search` | Search web and extract content | `query: str`, `max_results: int` |
+| `scrape_url` | Scrape specific URL | `url: str` |
+| `health_check` | Check server health | *(none)* |
+| `get_server_info` | Get server capabilities | *(none)* |
+
+## Architecture
+
+```
+MCP Client (Claude, LiteLLM)
+    ↓
+FastMCP Server (SSE Transport)
+    ↓
+Search Decision
+    ├─ Serper API (premium) → Content Scraper
+    └─ DuckDuckGo (free)    → Content Scraper
+                                    ↓
+                            Trafilatura (markdown)
+                                    ↓
+                            Structured Response
+```
 
 ## Testing
 
-The project includes comprehensive test suites for both the Azure Functions API and the MCP Server:
-
-### MCP Server Tests
 ```bash
-# Navigate to the tests directory
-cd docker/tests
+cd docker
 
-# Run the tests
-python -m unittest test_mcp_server.py
+# Run all tests
+python -m pytest tests/unit -v
+
+# With coverage
+python -m pytest tests/unit --cov=. --cov-report=term --cov-report=html
+
+# CI-safe (no external dependencies)
+python -m pytest -v -m "not integration"
 ```
 
-## Limitations and Considerations
-- **Text-Based Content**: The APIs are optimized for text and image content and may not accurately represent other multimedia or dynamic web content.
-- **Search Quality**: While DuckDuckGo fallback provides free search functionality, Serper API typically delivers higher quality and more comprehensive results
+**Current test coverage:** 70%+ across all modules
 
-## Search Sources
-- **Serper API**: Premium search results with high accuracy and comprehensive coverage (requires API key)
-- **DuckDuckGo Fallback**: Free search functionality with good quality results (no API key required)
+## Development
 
-## LiteLLM Compatibility
-WebCat's MCP server now uses SSE (Server-Sent Events) transport instead of streamable-http, making it fully compatible with LiteLLM and other MCP clients that expect SSE protocol. No authentication is required, making it simple to integrate.
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Format code
+make format
+
+# Lint code
+make lint
+
+# Run tests
+make test
+
+# Full CI check
+make ci
+```
+
+## Project Structure
+
+```
+docker/
+├── mcp_server.py          # Main MCP server
+├── simple_demo.py         # Demo server with UI
+├── clients/               # Serper & DuckDuckGo clients
+├── services/              # Content scraping & search
+├── tools/                 # MCP tool implementations
+├── models/                # Pydantic data models
+│   ├── domain/           # Domain entities
+│   └── responses/        # API responses
+├── endpoints/            # FastAPI endpoints
+└── tests/                # Comprehensive test suite
+```
+
+## Search Quality Comparison
+
+| Feature | Serper API | DuckDuckGo |
+|---------|------------|------------|
+| **Cost** | Paid (free tier available) | Free |
+| **Quality** | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐ Good |
+| **Coverage** | Comprehensive (Google-powered) | Standard |
+| **Speed** | Fast | Fast |
+| **Rate Limits** | 2,500/month (free tier) | None |
+
+## Limitations
+
+- **Text-focused:** Optimized for article content, not multimedia
+- **Rate limits:** Respects configured limits to prevent abuse
+- **No JavaScript:** Cannot scrape dynamic JS-rendered content
+- **PDF support:** Detection only, not full extraction
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure `make ci` passes
+5. Submit a Pull Request
+
+See [CLAUDE.md](CLAUDE.md) for development guidelines and architecture standards.
 
 ## License
 
-This project is licensed under the terms of the license included in the repository.
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## Azure Functions Usage
+## Links
 
-Here's a quick example of how to test the Azure Functions API locally:
+- **GitHub:** [github.com/Kode-Rex/webcat](https://github.com/Kode-Rex/webcat)
+- **Docker Hub:** [hub.docker.com/r/tmfrisinger/webcat](https://hub.docker.com/r/tmfrisinger/webcat)
+- **MCP Spec:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
+- **Serper API:** [serper.dev](https://serper.dev)
 
-```bash
-cd customgpt
-func start
-curl -X POST http://localhost:7071/api/scrape -H "Content-Type: application/json" -d "{\"url\":\"https://example.com\"}" # text only
-curl -X POST http://localhost:7071/api/scrape_with_images -H "Content-Type: application/json" -d "{\"url\":\"https://bigmedium.com/speaking/sentient-design-josh-clark-talk.html\"}" #text and images
-curl -X POST http://localhost:7071/api/search -H "Content-Type: application/json" -d "{\"query\":\"your search query\"}" # search and get content
-```
+---
+
+**Version 2.2.0** | Built with ❤️ using FastMCP, FastAPI, and Trafilatura
