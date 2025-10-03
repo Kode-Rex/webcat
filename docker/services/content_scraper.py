@@ -76,17 +76,16 @@ def _configure_html2text() -> html2text.HTML2Text:
         Configured HTML2Text instance
     """
     h = html2text.HTML2Text()
-    h.ignore_links = False
-    h.ignore_images = False
+    h.ignore_links = True  # Skip navigation links
+    h.ignore_images = True  # Skip images for cleaner output
     h.body_width = 0  # No wrapping
     h.unicode_snob = True  # Use Unicode instead of ASCII
-    h.escape_snob = True  # Don't escape special chars
-    h.use_automatic_links = True  # Auto-link URLs
-    h.mark_code = True  # Use markdown syntax for code blocks
-    h.single_line_break = False  # Use two line breaks for paragraphs
-    h.table_border_style = "html"  # Use HTML table borders
-    h.images_to_alt = False  # Include image URLs
-    h.protect_links = True  # Don't convert links to references
+    h.escape_snob = False  # Escape special chars for safety
+    h.use_automatic_links = False  # Avoid extra link noise
+    h.mark_code = False  # Let code blocks be handled naturally
+    h.single_line_break = True  # More compact output
+    h.ignore_emphasis = False  # Keep bold/italic
+    h.skip_internal_links = True  # Skip internal navigation
     return h
 
 
@@ -152,6 +151,47 @@ def _process_math_elements(soup: BeautifulSoup) -> None:
             math.replace_with(f"$$${str(math)}$$$")
 
 
+def _clean_soup(soup: BeautifulSoup) -> None:
+    """Remove unwanted elements from soup.
+
+    Args:
+        soup: BeautifulSoup object to clean in-place
+    """
+    # Remove common navigation and UI elements
+    unwanted_selectors = [
+        "nav",
+        "header",
+        "footer",
+        "aside",
+        ".nav",
+        ".navigation",
+        ".navbar",
+        ".menu",
+        ".header",
+        ".footer",
+        ".sidebar",
+        ".ad",
+        ".advertisement",
+        ".social",
+        ".share",
+        ".comments",
+        ".cookie",
+        ".popup",
+        '[role="navigation"]',
+        '[role="banner"]',
+        '[role="complementary"]',
+        '[aria-label="navigation"]',
+    ]
+
+    for selector in unwanted_selectors:
+        for element in soup.select(selector):
+            element.decompose()
+
+    # Remove script and style tags
+    for tag in soup(["script", "style", "iframe", "noscript"]):
+        tag.decompose()
+
+
 def _convert_to_markdown(html_content: str, title: str, url: str) -> str:
     """Convert HTML to markdown with preprocessing.
 
@@ -165,9 +205,15 @@ def _convert_to_markdown(html_content: str, title: str, url: str) -> str:
     """
     h = _configure_html2text()
     soup = BeautifulSoup(html_content, "html.parser")
+    _clean_soup(soup)
     _process_code_blocks(soup)
     _process_math_elements(soup)
     markdown_text = h.handle(str(soup))
+
+    # Clean up excessive whitespace
+    lines = [line.strip() for line in markdown_text.split("\n") if line.strip()]
+    markdown_text = "\n\n".join(lines)
+
     return f"# {title}\n\n*Source: {url}*\n\n{markdown_text}"
 
 
