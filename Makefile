@@ -12,35 +12,39 @@ setup-dev: ## Set up development environment with all tools
 	@echo "🔧 Setting up development environment..."
 	python -m venv venv
 	./venv/bin/pip install --upgrade pip
-	./venv/bin/pip install -r requirements-dev.txt
+	./venv/bin/pip install -e ".[dev]"
 	./venv/bin/pre-commit install
 	@echo "✅ Development environment ready!"
 
 install: ## Install production dependencies
 	@echo "📦 Installing production dependencies..."
-	pip install -r docker/requirements.txt
+	pip install -e .
 
 install-dev: ## Install development dependencies
 	@echo "📦 Installing development dependencies..."
-	pip install -r requirements-dev.txt
+	pip install -e ".[dev]"
 	pre-commit install
+
+install-all: ## Install all optional dependencies
+	@echo "📦 Installing all dependencies..."
+	pip install -e ".[all]"
 
 # Code quality
 format: ## Format code with black and isort
 	@echo "🎨 Formatting code..."
-	black --config pyproject.toml .
-	isort --settings-path pyproject.toml .
+	python -m black --config pyproject.toml .
+	python -m isort --settings-path pyproject.toml .
 	@echo "✅ Code formatted!"
 
 format-check: ## Check code formatting without making changes
 	@echo "🔍 Checking code format..."
-	black --config pyproject.toml --check --diff .
-	isort --settings-path pyproject.toml --check-only --diff .
+	python -m black --config pyproject.toml --check --diff .
+	python -m isort --settings-path pyproject.toml --check-only --diff .
 
 lint: ## Run essential linting checks (matches CI)
 	@echo "🔍 Running linting checks..."
 	python -m flake8 --version
-	flake8 .
+	python -m flake8 .
 	@echo "✅ Linting complete!"
 
 lint-full: ## Run all linting checks (including MyPy and Bandit)
@@ -63,7 +67,7 @@ test: ## Run tests
 
 test-coverage: ## Run tests with coverage report
 	@echo "🧪 Running tests with coverage..."
-	cd docker && python -m pytest tests/ -v --cov=mcp_server.py --cov=api_tools.py --cov=health.py --cov=simple_demo.py --cov=cli.py --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing
+	cd docker && python -m pytest tests/unit/ -v --cov=clients --cov=services --cov=tools --cov=models --cov=utils --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing
 
 test-integration: ## Run integration tests
 	@echo "🧪 Running integration tests..."
@@ -111,18 +115,35 @@ docker-run-prod: ## Run Docker container in production mode
 	docker run -p 8000:8000 -e WEBCAT_MODE=mcp webcat:latest
 
 # Development servers
-demo: ## Start demo server locally
+dev: ## Start MCP server with auto-reload (development mode)
+	@echo "🚀 Starting MCP server with auto-reload..."
+	@echo "📡 MCP endpoint: http://localhost:8000/mcp"
+	@echo "💗 Health check: http://localhost:8000/health"
+	@echo "🔄 Auto-reload enabled - edit files to see changes"
+	@echo ""
+	cd docker && PYTHONPATH=. watchmedo auto-restart --recursive --pattern="*.py" --directory=. -- python mcp_server.py
+
+dev-demo: ## Start demo server with auto-reload (development mode)
+	@echo "🚀 Starting demo server with auto-reload..."
+	@echo "🎨 Demo client: http://localhost:8000/client"
+	@echo "💗 Health check: http://localhost:8000/health"
+	@echo "📊 Status: http://localhost:8000/status"
+	@echo "🔄 Auto-reload enabled - edit files to see changes"
+	@echo ""
+	cd docker && PYTHONPATH=. watchmedo auto-restart --recursive --pattern="*.py" --directory=. -- python simple_demo.py
+
+demo: ## Start demo server locally (production mode)
 	@echo "🎨 Starting demo server..."
-	cd docker && source venv/bin/activate && python cli.py --mode demo --port 8000
+	cd docker && python cli.py --mode demo --port 8000
 
 demo-bg: ## Start demo server in background
 	@echo "🎨 Starting demo server in background..."
-	cd docker && source venv/bin/activate && nohup python cli.py --mode demo --port 8000 > demo.log 2>&1 &
+	cd docker && nohup python cli.py --mode demo --port 8000 > demo.log 2>&1 &
 	@echo "Demo server started in background. Check demo.log for logs."
 
-mcp: ## Start MCP server locally
+mcp: ## Start MCP server locally (production mode)
 	@echo "🛠️ Starting MCP server..."
-	cd docker && source venv/bin/activate && python cli.py --mode mcp --port 8000
+	cd docker && python cli.py --mode mcp --port 8000
 
 stop-bg: ## Stop background servers
 	@echo "🛑 Stopping background servers..."
@@ -193,14 +214,31 @@ env-info: ## Show environment information
 	@echo "Git commit: $(shell git rev-parse --short HEAD 2>/dev/null || echo 'Not a git repo')"
 
 # Quick development workflow
-dev: setup-dev format lint test demo ## Complete development setup and start demo
-	@echo "🎉 Development environment ready and demo server running!"
+dev-setup: setup-dev format lint test ## Complete development setup
+	@echo "🎉 Development environment ready!"
 
 # CI simulation
-ci: ## Simulate CI pipeline locally
-	@echo "🤖 Simulating CI pipeline..."
+ci: ## Simulate CI pipeline locally (all checks)
+	@echo "🤖 Simulating full CI pipeline..."
+	@echo ""
+	@echo "📋 Step 1/4: Code Quality"
 	$(MAKE) format-check
 	$(MAKE) lint
-	$(MAKE) security
+	@echo ""
+	@echo "🧪 Step 2/4: Tests with Coverage"
 	$(MAKE) test-coverage
-	@echo "✅ CI simulation complete!"
+	@echo ""
+	@echo "🔒 Step 3/4: Security Checks"
+	$(MAKE) security
+	@echo ""
+	@echo "🔍 Step 4/4: Dependency Audit"
+	$(MAKE) audit
+	@echo ""
+	@echo "✅ CI simulation complete! All checks passed."
+
+ci-fast: ## Simulate CI pipeline (fast - no security/audit)
+	@echo "🤖 Simulating fast CI pipeline..."
+	$(MAKE) format-check
+	$(MAKE) lint
+	$(MAKE) test
+	@echo "✅ Fast CI simulation complete!"

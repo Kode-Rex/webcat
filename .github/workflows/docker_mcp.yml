@@ -18,6 +18,7 @@ on:
 jobs:
   run-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -30,22 +31,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest requests sseclient-py python-dotenv
-          if [ -f docker/requirements.txt ]; then pip install -r docker/requirements.txt; fi
+          pip install pytest pytest-cov pytest-mock pytest-asyncio pytest-timeout httpx
+          pip install -e .
 
       - name: Run unit tests
         run: |
           cd docker
-          python -m pytest -v -m "not integration"
-        env:
-          WEBCAT_API_KEY: test_key_for_ci  # pragma: allowlist secret
-          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
-
-      - name: Run integration tests (if server available)
-        run: |
-          cd docker
-          # Try to run integration tests, but don't fail the build if server isn't available
-          python -m pytest -v -m "integration" || echo "Integration tests skipped - no running server"
+          PYTHONPATH=. python -m pytest tests/unit -v --timeout=30
         env:
           WEBCAT_API_KEY: test_key_for_ci  # pragma: allowlist secret
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
