@@ -32,19 +32,19 @@ install-all: ## Install all optional dependencies
 # Code quality
 format: ## Format code with black and isort
 	@echo "🎨 Formatting code..."
-	black --config pyproject.toml .
-	isort --settings-path pyproject.toml .
+	python -m black --config pyproject.toml .
+	python -m isort --settings-path pyproject.toml .
 	@echo "✅ Code formatted!"
 
 format-check: ## Check code formatting without making changes
 	@echo "🔍 Checking code format..."
-	black --config pyproject.toml --check --diff .
-	isort --settings-path pyproject.toml --check-only --diff .
+	python -m black --config pyproject.toml --check --diff .
+	python -m isort --settings-path pyproject.toml --check-only --diff .
 
 lint: ## Run essential linting checks (matches CI)
 	@echo "🔍 Running linting checks..."
 	python -m flake8 --version
-	flake8 .
+	python -m flake8 .
 	@echo "✅ Linting complete!"
 
 lint-full: ## Run all linting checks (including MyPy and Bandit)
