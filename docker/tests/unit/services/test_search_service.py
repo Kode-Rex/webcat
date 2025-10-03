@@ -7,8 +7,11 @@
 
 from unittest.mock import patch
 
-from models.api_search_result import APISearchResult
 from services.search_service import fetch_with_fallback
+from tests.builders.api_search_result_builder import (
+    a_duckduckgo_result,
+    a_serper_result,
+)
 
 
 class TestSearchServiceWithSerperKey:
@@ -17,9 +20,7 @@ class TestSearchServiceWithSerperKey:
     @patch("services.search_service.fetch_search_results")
     def test_uses_serper_when_key_provided(self, mock_serper):
         # Arrange
-        mock_serper.return_value = [
-            APISearchResult(title="Test", link="https://test.com", snippet="Snippet")
-        ]
+        mock_serper.return_value = [a_serper_result().build()]
 
         # Act
         results, source = fetch_with_fallback("test query", serper_api_key="fake_key")
@@ -27,7 +28,7 @@ class TestSearchServiceWithSerperKey:
         # Assert
         assert source == "Serper API"
         assert len(results) == 1
-        assert results[0].title == "Test"
+        assert results[0].title == "Serper Result"
         mock_serper.assert_called_once_with("test query", "fake_key")
 
     @patch("services.search_service.fetch_duckduckgo_search_results")
@@ -35,9 +36,7 @@ class TestSearchServiceWithSerperKey:
     def test_falls_back_to_ddg_when_serper_returns_empty(self, mock_serper, mock_ddg):
         # Arrange
         mock_serper.return_value = []
-        mock_ddg.return_value = [
-            APISearchResult(title="DDG", link="https://ddg.com", snippet="DDG result")
-        ]
+        mock_ddg.return_value = [a_duckduckgo_result().build()]
 
         # Act
         results, source = fetch_with_fallback("test query", serper_api_key="fake_key")
@@ -45,7 +44,7 @@ class TestSearchServiceWithSerperKey:
         # Assert
         assert source == "DuckDuckGo (free fallback)"
         assert len(results) == 1
-        assert results[0].title == "DDG"
+        assert results[0].title == "DuckDuckGo Result"
 
 
 class TestSearchServiceWithoutSerperKey:
@@ -54,9 +53,7 @@ class TestSearchServiceWithoutSerperKey:
     @patch("services.search_service.fetch_duckduckgo_search_results")
     def test_uses_duckduckgo_when_no_key(self, mock_ddg):
         # Arrange
-        mock_ddg.return_value = [
-            APISearchResult(title="DDG", link="https://ddg.com", snippet="DDG result")
-        ]
+        mock_ddg.return_value = [a_duckduckgo_result().build()]
 
         # Act
         results, source = fetch_with_fallback("test query", serper_api_key="")

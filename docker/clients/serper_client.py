@@ -16,6 +16,25 @@ from models.api_search_result import APISearchResult
 logger = logging.getLogger(__name__)
 
 
+def _convert_organic_results(organic_results: list) -> List[APISearchResult]:
+    """Convert organic search results to APISearchResult objects.
+
+    Args:
+        organic_results: List of organic result dictionaries from Serper API
+
+    Returns:
+        List of APISearchResult objects
+    """
+    return [
+        APISearchResult(
+            title=result.get("title", "Untitled"),
+            link=result.get("link", ""),
+            snippet=result.get("snippet", ""),
+        )
+        for result in organic_results
+    ]
+
+
 def fetch_search_results(query: str, api_key: str) -> List[APISearchResult]:
     """
     Fetches search results from the Serper API.
@@ -38,15 +57,7 @@ def fetch_search_results(query: str, api_key: str) -> List[APISearchResult]:
 
         # Process and return the search results
         if "organic" in data:
-            # Convert to APISearchResult objects
-            return [
-                APISearchResult(
-                    title=result.get("title", "Untitled"),
-                    link=result.get("link", ""),
-                    snippet=result.get("snippet", ""),
-                )
-                for result in data["organic"]
-            ]
+            return _convert_organic_results(data["organic"])
         return []
     except Exception as e:
         logger.error(f"Error fetching search results: {str(e)}")

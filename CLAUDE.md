@@ -241,6 +241,31 @@ def test_live_search():  # Missing @pytest.mark.integration
 - **Type hints**: Required for all function signatures (enforced by mypy)
 - **Docstrings**: Google-style docstrings for public functions
 
+### Architecture Standards
+
+**Maximum Nesting Depth**: 3 levels or less
+- Functions with deeper nesting must be refactored
+- Extract helper methods to reduce complexity
+- Each helper method should represent a single concept
+- Example violation: 6-level nesting in content_scraper.py (fixed by extracting 10 helper methods)
+
+**One Class Per File**:
+- Each file should contain exactly one class definition
+- Applies to both production code and test infrastructure
+- Example: Split `mock_ddgs.py` (3 classes) into 3 separate files
+
+**Methods for Concepts**:
+- Extract helper methods for each logical concept or operation
+- Helper methods should have clear, single responsibilities
+- Prefer multiple small methods over one large method
+- Example: `_fetch_content()`, `_convert_to_markdown()`, `_truncate_if_needed()`
+
+**No Raw Mocks**:
+- Never use `MagicMock()` with property assignment (e.g., `mock.status_code = 200`)
+- Create typed mock classes instead (e.g., `MockHttpResponse`, `MockSerperResponse`)
+- Use factory pattern for creating pre-configured test doubles
+- Use builder pattern with fluent API for test data (e.g., `a_search_result().with_title("X").build()`)
+
 ### Single Source of Truth
 
 **Tool Versions** are defined in `pyproject.toml` under `[project.optional-dependencies.dev]`:
