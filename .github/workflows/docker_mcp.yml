@@ -18,6 +18,7 @@ on:
 jobs:
   run-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,6 +42,7 @@ jobs:
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
 
       - name: Run integration tests (if server available)
+        timeout-minutes: 3
         run: |
           cd docker
           # Try to run integration tests, but don't fail the build if server isn't available
