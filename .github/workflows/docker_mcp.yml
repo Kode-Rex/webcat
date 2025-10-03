@@ -30,13 +30,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest requests sseclient-py python-dotenv
-          if [ -f docker/requirements.txt ]; then pip install -r docker/requirements.txt; fi
+          pip install -e ".[test]"
 
       - name: Run unit tests
         run: |
           cd docker
-          python -m pytest -v -m "not integration"
+          PYTHONPATH=. python -m pytest -v -m "not integration"
         env:
           WEBCAT_API_KEY: test_key_for_ci  # pragma: allowlist secret
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
@@ -45,7 +44,7 @@ jobs:
         run: |
           cd docker
           # Try to run integration tests, but don't fail the build if server isn't available
-          python -m pytest -v -m "integration" || echo "Integration tests skipped - no running server"
+          PYTHONPATH=. python -m pytest -v -m "integration" || echo "Integration tests skipped - no running server"
         env:
           WEBCAT_API_KEY: test_key_for_ci  # pragma: allowlist secret
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
