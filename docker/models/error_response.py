@@ -3,16 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""ErrorResponse model - standardized error response format."""
+"""Error response model.
 
-from typing import Optional
+DEPRECATED: Import from models.responses.error_response instead.
+"""
 
-from pydantic import BaseModel
+import warnings
 
+from models.responses.error_response import ErrorResponse
 
-class ErrorResponse(BaseModel):
-    """Error response format."""
+warnings.warn(
+    "Importing from 'models.error_response' is deprecated. Use 'models.responses.error_response' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    error: str
-    query: Optional[str] = None
-    details: Optional[str] = None
+__all__ = ["ErrorResponse"]
