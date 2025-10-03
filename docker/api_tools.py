@@ -6,14 +6,58 @@
 """API tools module for FastMCP WebCat integration."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from fastmcp import FastMCP
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     pass
 
 logger = logging.getLogger(__name__)
+
+
+# Response models for API tools
+class APISearchToolResponse(BaseModel):
+    """Response from API search tool with additional metadata."""
+
+    success: bool
+    query: str
+    max_results: int
+    search_source: str
+    results: List[Dict[str, Any]]  # SearchResult dicts
+    total_found: int
+    note: str = ""
+    error: Optional[str] = None
+
+
+class APIHealthCheckResponse(BaseModel):
+    """Response from API health check tool."""
+
+    success: bool
+    status: str
+    service: str
+    error: Optional[str] = None
+
+
+class APIServerInfoResponse(BaseModel):
+    """Response from API server info tool."""
+
+    success: bool
+    version: str
+    server: str
+    features: List[str]
+    error: Optional[str] = None
+
+
+class APIScrapeResponse(BaseModel):
+    """Response from API scrape tool."""
+
+    success: bool
+    url: str
+    title: str
+    content: str
+    error: Optional[str] = None
 
 
 def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
@@ -23,8 +67,12 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
         name="search",
         description="Search the web for information using Serper API or DuckDuckGo fallback",
     )
-    async def search_tool(query: str, max_results: int = 5) -> Dict[str, Any]:
-        """Search the web for information on a given query."""
+    async def search_tool(query: str, max_results: int = 5) -> dict:
+        """Search the web for information on a given query.
+
+        Returns:
+            Dict representation of APISearchToolResponse model (for MCP JSON serialization)
+        """
         try:
             logger.info(
                 f"Processing search request: {query} (max {max_results} results)"
@@ -32,63 +80,100 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
 
             # Call the existing search function
             if "search" in webcat_functions:
-                result = await webcat_functions["search"](query)
+                result: dict = await webcat_functions["search"](query)
 
                 # Limit results if specified
-                if result.get("results") and len(result["results"]) > max_results:
-                    result["results"] = result["results"][:max_results]
-                    result["note"] = f"Results limited to {max_results} items"
+                note: str = ""
+                results: List[Dict[str, Any]] = result.get("results", [])
+                if results and len(results) > max_results:
+                    results = results[:max_results]
+                    note = f"Results limited to {max_results} items"
 
-                return {
-                    "success": True,
-                    "query": query,
-                    "max_results": max_results,
-                    "search_source": result.get("search_source", "Unknown"),
-                    "results": result.get("results", []),
-                    "total_found": len(result.get("results", [])),
-                    "note": result.get("note", ""),
-                }
+                # Build typed response
+                response = APISearchToolResponse(
+                    success=True,
+                    query=query,
+                    max_results=max_results,
+                    search_source=result.get("search_source", "Unknown"),
+                    results=results,
+                    total_found=len(results),
+                    note=note,
+                )
+                # Only convert to dict at MCP boundary for JSON serialization
+                return response.model_dump()
             else:
-                return {"error": "Search function not available"}
+                response = APISearchToolResponse(
+                    success=False,
+                    query=query,
+                    max_results=max_results,
+                    search_source="Unknown",
+                    results=[],
+                    total_found=0,
+                    error="Search function not available",
+                )
+                return response.model_dump()
 
         except Exception as e:
             logger.error(f"Error in search tool: {str(e)}")
-            return {"error": str(e), "query": query}
+            response = APISearchToolResponse(
+                success=False,
+                query=query,
+                max_results=max_results,
+                search_source="Unknown",
+                results=[],
+                total_found=0,
+                error=str(e),
+            )
+            return response.model_dump()
 
     @mcp.tool(
         name="health_check", description="Check the health status of the WebCat server"
     )
-    async def health_check_tool() -> Dict[str, Any]:
-        """Check the health of the WebCat server."""
+    async def health_check_tool() -> dict:
+        """Check the health of the WebCat server.
+
+        Returns:
+            Dict representation of APIHealthCheckResponse model
+        """
         try:
             logger.info("Processing health check request")
 
             # Call the existing health check function
             if "health_check" in webcat_functions:
                 result = await webcat_functions["health_check"]()
-                return {
-                    "success": True,
-                    "status": result.get("status", "unknown"),
-                    "service": result.get("service", "webcat"),
-                    "timestamp": result.get("timestamp", "unknown"),
-                }
+                response = APIHealthCheckResponse(
+                    success=True,
+                    status=result.get("status", "unknown"),
+                    service=result.get("service", "webcat"),
+                )
+                return response.model_dump()
             else:
-                return {
-                    "success": True,
-                    "status": "healthy",
-                    "service": "webcat",
-                    "message": "Basic health check passed",
-                }
+                response = APIHealthCheckResponse(
+                    success=True,
+                    status="healthy",
+                    service="webcat",
+                )
+                return response.model_dump()
 
         except Exception as e:
             logger.error(f"Error in health check tool: {str(e)}")
-            return {"error": str(e), "status": "unhealthy"}
+            response = APIHealthCheckResponse(
+                success=False,
+                status="unhealthy",
+                service="webcat",
+                error=str(e),
+            )
+            return response.model_dump()
 
     @mcp.tool(
         name="scrape_url", description="Scrape and extract content from a specific URL"
     )
-    async def scrape_url_tool(url: str) -> Dict[str, Any]:
-        """Scrape content from a specific URL and convert to markdown."""
+    async def scrape_url_tool(url: str) -> dict:
+        """Scrape content from a specific URL and convert to markdown.
+
+        Returns:
+            Dict representation of APIScrapeResponse model
+        """
         try:
             logger.info(f"Processing scrape request for URL: {url}")
 
@@ -105,58 +190,65 @@ def setup_webcat_tools(mcp: FastMCP, webcat_functions: Dict[str, Any]):
             # Scrape the content
             scraped_result = scrape_search_result(search_result)
 
-            return {
-                "success": True,
-                "url": url,
-                "title": scraped_result.title,
-                "content": scraped_result.content,
-                "content_length": len(scraped_result.content),
-            }
+            response = APIScrapeResponse(
+                success=True,
+                url=url,
+                title=scraped_result.title,
+                content=scraped_result.content,
+            )
+            return response.model_dump()
 
         except Exception as e:
             logger.error(f"Error in scrape URL tool: {str(e)}")
-            return {"error": str(e), "url": url}
+            response = APIScrapeResponse(
+                success=False,
+                url=url,
+                title="",
+                content="",
+                error=str(e),
+            )
+            return response.model_dump()
 
     @mcp.tool(
         name="get_server_info",
         description="Get information about the WebCat server configuration and capabilities",
     )
-    async def get_server_info_tool() -> Dict[str, Any]:
-        """Get information about the WebCat server."""
-        try:
-            import os
+    async def get_server_info_tool() -> dict:
+        """Get information about the WebCat server.
 
+        Returns:
+            Dict representation of APIServerInfoResponse model
+        """
+        try:
             logger.info("Processing server info request")
 
-            return {
-                "success": True,
-                "service": "WebCat MCP Server",
-                "version": "2.2.0",
-                "capabilities": [
-                    "Web search with Serper API",
-                    "DuckDuckGo fallback search",
-                    "Content extraction and scraping",
-                    "Markdown conversion",
-                    "FastMCP protocol support",
-                    "SSE streaming",
-                ],
-                "configuration": {
-                    "serper_api_configured": bool(os.environ.get("SERPER_API_KEY")),
-                    "duckduckgo_available": True,  # Always available in our setup
-                    "port": int(os.environ.get("PORT", 8000)),
-                    "log_level": os.environ.get("LOG_LEVEL", "INFO"),
-                },
-                "endpoints": {
-                    "main_mcp": "/mcp",
-                    "sse_demo": "/sse",
-                    "health": "/health",
-                    "demo_client": "/client",
-                },
-            }
+            features = [
+                "Web search with Serper API",
+                "DuckDuckGo fallback search",
+                "Content extraction and scraping",
+                "Markdown conversion",
+                "FastMCP protocol support",
+                "SSE streaming",
+            ]
+
+            response = APIServerInfoResponse(
+                success=True,
+                version="2.2.0",
+                server="WebCat MCP Server",
+                features=features,
+            )
+            return response.model_dump()
 
         except Exception as e:
             logger.error(f"Error in server info tool: {str(e)}")
-            return {"error": str(e)}
+            response = APIServerInfoResponse(
+                success=False,
+                version="unknown",
+                server="WebCat MCP Server",
+                features=[],
+                error=str(e),
+            )
+            return response.model_dump()
 
 
 def create_webcat_functions() -> Dict[str, Any]:
