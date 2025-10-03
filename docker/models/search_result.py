@@ -3,17 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""SearchResult model - represents a single search result with scraped content."""
+"""Search result model.
 
-from typing import Optional
+DEPRECATED: Import from models.domain.search_result instead.
+"""
 
-from pydantic import BaseModel
+import warnings
 
+from models.domain.search_result import SearchResult
 
-class SearchResult(BaseModel):
-    """Model for a single search result with scraped content."""
+warnings.warn(
+    "Importing from 'models.search_result' is deprecated. Use 'models.domain.search_result' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    title: str
-    url: Optional[str] = ""
-    snippet: str
-    content: str = ""
+__all__ = ["SearchResult"]
