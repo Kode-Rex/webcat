@@ -265,6 +265,11 @@
             <input type="text" id="serverUrl" value="http://localhost:8000/sse" placeholder="http://localhost:8000/sse">
         </div>
 
+        <div class="input-group">
+            <label for="apiKey">API Key (optional - only if WEBCAT_API_KEY is set):</label>
+            <input type="password" id="apiKey" placeholder="Leave empty if no authentication required">
+        </div>
+
         <div class="search-options">
             <div class="input-group">
                 <label for="queryInput">Search Query:</label>
@@ -358,6 +363,16 @@
             log(`Attempting to connect to: ${url}`, 'info');
 
             try {
+                // Get API key if provided
+                const apiKey = document.getElementById('apiKey').value.trim();
+
+                // Note: EventSource doesn't support custom headers
+                // So we need to pass the auth token as a query parameter or use fetch
+                if (apiKey) {
+                    log('⚠️  API key provided but EventSource does not support Authorization headers', 'warning');
+                    log('💡 For authenticated requests, the server needs to accept tokens via query params', 'info');
+                }
+
                 // Connect to the SSE endpoint
                 eventSource = new EventSource(url);
 
