@@ -29,12 +29,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
-        .connection-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
         .input-group {
             margin-bottom: 20px;
         }
@@ -44,17 +38,16 @@
             font-weight: 600;
             color: #555;
         }
-        input, select, button {
+        input, button {
             padding: 12px;
             border: 2px solid #e1e5e9;
             border-radius: 6px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
         }
-        input, select {
+        input {
             width: 100%;
         }
-        input:focus, select:focus {
+        input:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -64,105 +57,29 @@
             border: none;
             cursor: pointer;
             font-weight: 600;
-            transition: transform 0.2s ease;
-            white-space: nowrap;
+            width: 100%;
+            margin-top: 10px;
         }
         button:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
             transform: none;
         }
-        .status {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-weight: 600;
-            text-align: center;
-        }
-        .status.connected {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .status.disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .status.connecting {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-        .logs {
-            max-height: 400px;
-            overflow-y: auto;
-            background-color: #1e1e1e;
-            color: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .log-entry {
-            margin-bottom: 8px;
-            padding: 5px 0;
-            border-bottom: 1px solid #333;
-        }
-        .log-entry.success { color: #28a745; }
-        .log-entry.error { color: #dc3545; }
-        .log-entry.info { color: #17a2b8; }
-        .log-entry.warning { color: #ffc107; }
-        .response-display {
+        .results {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 8px;
             padding: 20px;
-            margin: 15px 0;
-            max-height: 500px;
+            margin-top: 20px;
+            max-height: 600px;
             overflow-y: auto;
         }
-        .response-display pre {
-            margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-size: 12px;
-        }
-        .connection-info {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        .search-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        @media (max-width: 768px) {
-            .search-options {
-                grid-template-columns: 1fr;
-            }
-            .connection-controls {
-                flex-direction: column;
-            }
-        }
-        .results-summary {
-            background: #e7f3ff;
-            border-left: 4px solid #007bff;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 0 8px 8px 0;
-        }
         .result-item {
-            background: #f8f9fa;
+            background: white;
             border: 1px solid #dee2e6;
             border-radius: 6px;
             padding: 15px;
@@ -184,71 +101,45 @@
             margin-bottom: 10px;
             font-style: italic;
         }
-        .result-content {
-            max-height: 200px;
-            overflow-y: auto;
-            border-top: 1px solid #dee2e6;
-            padding-top: 10px;
-        }
-        .markdown-content {
-            background: #f8f9fa;
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
             padding: 15px;
             border-radius: 6px;
-            max-height: 500px;
-            overflow-y: auto;
             margin-top: 10px;
-            line-height: 1.6;
         }
-        .markdown-content h1 {
-            font-size: 1.5em;
-            margin: 0.5em 0;
-            color: #333;
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
         }
-        .markdown-content h2 {
-            font-size: 1.3em;
-            margin: 0.5em 0;
-            color: #444;
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
         }
-        .markdown-content h3 {
-            font-size: 1.1em;
-            margin: 0.5em 0;
-            color: #555;
-        }
-        .markdown-content p {
-            margin: 0.8em 0;
-        }
-        .markdown-content code {
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-        }
-        .markdown-content pre {
+        pre {
             background: #2d2d2d;
             color: #f8f8f2;
             padding: 12px;
             border-radius: 6px;
             overflow-x: auto;
+            font-size: 12px;
         }
-        .markdown-content pre code {
-            background: none;
-            padding: 0;
-            color: inherit;
-        }
-        .markdown-content ul, .markdown-content ol {
-            margin: 0.8em 0;
-            padding-left: 2em;
-        }
-        .markdown-content blockquote {
-            border-left: 4px solid #667eea;
-            margin: 1em 0;
-            padding-left: 1em;
-            color: #666;
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
         }
     </style>
-    <!-- Marked.js for markdown rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -258,10 +149,29 @@
     </div>
 
     <div class="container">
+        <h2>🔍 Test Search Tool</h2>
+
+        <div class="input-group">
+            <label for="apiKey">API Key (optional - leave empty if WEBCAT_API_KEY not set):</label>
+            <input type="password" id="apiKey" placeholder="Your bearer token here">
+        </div>
+
+        <div class="input-group">
+            <label for="query">Search Query:</label>
+            <input type="text" id="query" placeholder="Enter your search query" value="Python web scraping">
+        </div>
+
+        <button onclick="performSearch()">🔍 Search</button>
+        <button onclick="checkHealth()">💗 Health Check</button>
+
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
         <h2>📋 Server Information</h2>
         <p><strong>MCP Endpoint:</strong> <code>http://localhost:8000/mcp</code></p>
-        <p><strong>Status:</strong> <a href="/status">View Status</a></p>
-        <p><strong>Health:</strong> <a href="/health">Health Check</a></p>
+        <p><strong>Status:</strong> <a href="/status" target="_blank">View Status</a></p>
+        <p><strong>Health:</strong> <a href="/health" target="_blank">Health Check</a></p>
 
         <h3>🔗 Connecting to WebCat</h3>
         <p>WebCat is an MCP server. Connect to it using an MCP client like:</p>
@@ -271,11 +181,6 @@
             <li><strong>Custom Integration:</strong> Connect to <code>http://localhost:8000/mcp</code></li>
         </ul>
 
-        <h3>🔐 Authentication (Optional)</h3>
-        <p>If <code>WEBCAT_API_KEY</code> is set, include it in requests:</p>
-        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;"><code>Authorization: Bearer your_api_key_here</code></pre>
-
-
         <h3>🛠️ Available MCP Tools</h3>
         <ul>
             <li><code>search</code> - Search the web and extract content</li>
@@ -283,12 +188,107 @@
         </ul>
 
         <h3>📚 Documentation</h3>
-        <p>For full documentation and setup instructions, see the <a href="https://github.com/Kode-Rex/webcat">GitHub repository</a>.</p>
+        <p>For full documentation and setup instructions, see the <a href="https://github.com/Kode-Rex/webcat" target="_blank">GitHub repository</a>.</p>
     </div>
 
     <script>
-        // Simple page that just displays info - no interactive demo
-        console.log('WebCat MCP Server - Ready');
+        async function callMCPTool(toolName, args) {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            try {
+                // Call the MCP endpoint with tool invocation
+                const response = await fetch('http://localhost:8000/mcp/call', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        tool: toolName,
+                        arguments: args
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${error}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('query').value.trim();
+            const resultsDiv = document.getElementById('results');
+
+            if (!query) {
+                resultsDiv.innerHTML = '<div class="error">Please enter a search query</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="info">🔄 Searching...</div>';
+
+            try {
+                const result = await callMCPTool('search', { query: query });
+
+                if (result.error) {
+                    resultsDiv.innerHTML = `<div class="error">❌ ${result.error}</div>`;
+                    return;
+                }
+
+                let html = '<div class="success">✅ Search completed</div>';
+                html += `<div style="margin-top: 15px;"><strong>Source:</strong> ${result.search_source || 'Unknown'}</div>`;
+                html += `<div><strong>Results:</strong> ${result.results ? result.results.length : 0}</div>`;
+
+                if (result.results && result.results.length > 0) {
+                    result.results.forEach((item, index) => {
+                        html += `
+                            <div class="result-item">
+                                <div class="result-title">${index + 1}. ${item.title || 'Untitled'}</div>
+                                <div class="result-url">${item.url || 'No URL'}</div>
+                                <div class="result-snippet">"${item.snippet || 'No description'}"</div>
+                                ${item.content ? `<details><summary>View content</summary><pre>${item.content.substring(0, 500)}...</pre></details>` : ''}
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div class="result-item">No results found</div>';
+                }
+
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkHealth() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">💗 Checking health...</div>';
+
+            try {
+                const result = await callMCPTool('health_check', {});
+                resultsDiv.innerHTML = `
+                    <div class="success">✅ Health check completed</div>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Enter key support
+        document.getElementById('query').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
     </script>
 </body>
 </html>
