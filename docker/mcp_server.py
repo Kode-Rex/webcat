@@ -61,7 +61,12 @@ logging.info(
     f"SERPER API key: {'Set' if SERPER_API_KEY else 'Not set (using DuckDuckGo fallback)'}"
 )
 
-# Create FastMCP instance (no authentication required)
+WEBCAT_API_KEY = os.environ.get("WEBCAT_API_KEY", "")
+logging.info(
+    f"Bearer token authentication: {'Enabled' if WEBCAT_API_KEY else 'Disabled'}"
+)
+
+# Create FastMCP instance
 mcp_server = FastMCP("WebCat Search")
 
 # Register tools with MCP server

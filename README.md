@@ -3,14 +3,16 @@
 **Web search and content extraction for AI models via Model Context Protocol (MCP)**
 
 [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/Kode-Rex/webcat)
-[![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://hub.docker.com/r/tmfrisinger/webcat)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## Quick Start
 
 ```bash
-# Run WebCat with Docker (30 seconds to working demo)
-docker run -p 8000:8000 tmfrisinger/webcat:latest
+cd docker
+python -m pip install -e ".[dev]"
+
+# Start demo server with UI
+python simple_demo.py
 
 # Open demo client
 open http://localhost:8000/demo
@@ -30,39 +32,21 @@ Built with **FastAPI** and **FastMCP** for seamless AI integration.
 
 ## Features
 
-- ✅ **No Authentication Required** - Simple setup
+- ✅ **Optional Authentication** - Bearer token auth when needed, or run without
 - ✅ **Automatic Fallback** - Serper API → DuckDuckGo if needed
 - ✅ **Smart Content Extraction** - Trafilatura removes navigation/ads/chrome
 - ✅ **MCP Compliant** - Works with Claude Desktop, LiteLLM, etc.
 - ✅ **Rate Limited** - Configurable protection
-- ✅ **Docker Ready** - One command deployment
 - ✅ **Parallel Processing** - Fast concurrent scraping
 
 ## Installation & Usage
 
-### Docker (Recommended)
-
-```bash
-# With Serper API (best results)
-docker run -p 8000:8000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:2.2.0
-
-# Free tier (DuckDuckGo only)
-docker run -p 8000:8000 tmfrisinger/webcat:2.2.0
-
-# Custom configuration
-docker run -p 9000:9000 \
-  -e PORT=9000 \
-  -e SERPER_API_KEY=your_key \
-  -e RATE_LIMIT_WINDOW=60 \
-  -e RATE_LIMIT_MAX_REQUESTS=10 \
-  tmfrisinger/webcat:2.2.0
-```
-
-### Local Development
-
 ```bash
 cd docker
 python -m pip install -e ".[dev]"
+
+# Configure environment (optional)
+echo "SERPER_API_KEY=your_key" > .env
 
 # Start MCP server
 python mcp_server.py
@@ -88,6 +72,7 @@ python simple_demo.py
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional) |
+| `WEBCAT_API_KEY` | *(none)* | Bearer token for authentication (optional, if set all requests must include `Authorization: Bearer <token>`) |
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `LOG_DIR` | `/tmp` | Log file directory |
@@ -99,7 +84,17 @@ python simple_demo.py
 1. Visit [serper.dev](https://serper.dev)
 2. Sign up for free tier (2,500 searches/month)
 3. Copy your API key
-4. Pass to Docker: `-e SERPER_API_KEY=your_key`
+4. Add to `.env` file: `SERPER_API_KEY=your_key`
+
+### Enable Authentication (Optional)
+
+To require bearer token authentication for all MCP tool calls:
+
+1. Generate a secure random token: `openssl rand -hex 32`
+2. Add to `.env` file: `WEBCAT_API_KEY=your_token`
+3. Include in all requests: `Authorization: Bearer your_token`
+
+**Note:** If `WEBCAT_API_KEY` is not set, no authentication is required.
 
 ## MCP Tools
 
@@ -216,7 +211,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Links
 
 - **GitHub:** [github.com/Kode-Rex/webcat](https://github.com/Kode-Rex/webcat)
-- **Docker Hub:** [hub.docker.com/r/tmfrisinger/webcat](https://hub.docker.com/r/tmfrisinger/webcat)
 - **MCP Spec:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
 - **Serper API:** [serper.dev](https://serper.dev)
 
