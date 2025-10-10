@@ -18,10 +18,14 @@ class TestSearchTool:
     """Tests for search tool."""
 
     @pytest.mark.asyncio
+    @patch("tools.search_tool.validate_bearer_token")
     @patch("tools.search_tool.process_search_results")
     @patch("tools.search_tool.fetch_with_fallback")
-    async def test_returns_search_results(self, mock_fetch, mock_process):
+    async def test_returns_search_results(
+        self, mock_fetch, mock_process, mock_validate
+    ):
         # Arrange
+        mock_validate.return_value = (True, None)
         api_results = [an_api_search_result().build()]
         processed = [
             SearchResult(
@@ -44,9 +48,11 @@ class TestSearchTool:
         assert result["results"][0]["title"] == "Test"
 
     @pytest.mark.asyncio
+    @patch("tools.search_tool.validate_bearer_token")
     @patch("tools.search_tool.fetch_with_fallback")
-    async def test_returns_error_when_no_results(self, mock_fetch):
+    async def test_returns_error_when_no_results(self, mock_fetch, mock_validate):
         # Arrange
+        mock_validate.return_value = (True, None)
         mock_fetch.return_value = ([], "DuckDuckGo (free fallback)")
 
         # Act
@@ -58,10 +64,14 @@ class TestSearchTool:
         assert len(result["results"]) == 0
 
     @pytest.mark.asyncio
+    @patch("tools.search_tool.validate_bearer_token")
     @patch("tools.search_tool.process_search_results")
     @patch("tools.search_tool.fetch_with_fallback")
-    async def test_processes_results_correctly(self, mock_fetch, mock_process):
+    async def test_processes_results_correctly(
+        self, mock_fetch, mock_process, mock_validate
+    ):
         # Arrange
+        mock_validate.return_value = (True, None)
         api_results = [
             an_api_search_result()
             .with_title("T")
@@ -77,3 +87,31 @@ class TestSearchTool:
 
         # Assert
         mock_process.assert_called_once_with(api_results)
+
+    @pytest.mark.asyncio
+    @patch("tools.search_tool.validate_bearer_token")
+    async def test_returns_error_when_authentication_fails(self, mock_validate):
+        # Arrange
+        mock_validate.return_value = (False, "Invalid bearer token")
+
+        # Act
+        result = await search_tool("test query")
+
+        # Assert
+        assert result["query"] == "test query"
+        assert result["error"] == "Invalid bearer token"
+        assert result["search_source"] == "none"
+        assert len(result["results"]) == 0
+
+    @pytest.mark.asyncio
+    @patch("tools.search_tool.validate_bearer_token")
+    async def test_passes_context_to_authentication(self, mock_validate):
+        # Arrange
+        mock_validate.return_value = (False, "Auth error")
+        ctx = {"headers": {"Authorization": "Bearer test"}}
+
+        # Act
+        await search_tool("query", ctx=ctx)
+
+        # Assert
+        mock_validate.assert_called_once_with(ctx)
