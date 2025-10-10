@@ -25,9 +25,6 @@ classifiers = [
 ]
 dependencies = [
     "requests>=2.31.0",
-    "beautifulsoup4>=4.12.0",
-    "readability-lxml>=0.8.1",
-    "lxml_html_clean>=0.1.0",
     "python-dotenv>=1.0.0",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
@@ -35,7 +32,6 @@ dependencies = [
     "sse-starlette>=1.6.0",
     "httpx>=0.24.0",
     "fastmcp>=2.7.0",
-    "html2text>=2020.1.16",
     "duckduckgo-search>=3.9.0",
     "trafilatura>=1.6.0",
 ]
@@ -166,11 +162,10 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
-    "readability.*",
-    "html2text.*",
     "duckduckgo_search.*",
     "fastmcp.*",
     "sse_starlette.*",
+    "trafilatura.*",
 ]
 ignore_missing_imports = true
 

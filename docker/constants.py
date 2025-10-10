@@ -5,6 +5,8 @@
 
 """Constants for WebCat application."""
 
+import os
+
 # Application version
 VERSION = "2.3.1"
 
@@ -22,7 +24,7 @@ CAPABILITIES = [
 ]
 
 # Content limits
-MAX_CONTENT_LENGTH = 8000
+MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", "50000"))
 DEFAULT_SEARCH_RESULTS = 5
 
 # Timeout settings

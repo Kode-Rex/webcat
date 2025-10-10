@@ -53,6 +53,7 @@ docker-compose up
 - `PORT`: Port to run the server on (default: 8000)
 - `LOG_LEVEL`: Logging level (default: INFO)
 - `LOG_DIR`: Directory for log files (default: /tmp)
+- `MAX_CONTENT_LENGTH`: Maximum characters to return per scraped article (default: 50000)
 
 ### Simplified Setup
 
