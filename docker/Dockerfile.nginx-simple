@@ -1,0 +1,42 @@
+# Single image with WebCat + nginx auth proxy
+# Based on existing WebCat Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install nginx and supervisor
+RUN apt-get update && \
+    apt-get install -y nginx supervisor && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy project metadata and structure
+COPY pyproject.toml README.md LICENSE /app/
+COPY docker/ /app/docker/
+COPY examples/ /app/examples/
+
+# Install package with dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir /app
+
+# Create log directory
+RUN mkdir -p /var/log/webcat && chmod 755 /var/log/webcat
+
+# Copy nginx and supervisor configs
+COPY docker/nginx-single-image.conf /etc/nginx/nginx.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint-nginx.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose port (nginx listens on 8000, proxies to webcat on 4000)
+EXPOSE 8000
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=4000
+ENV LOG_LEVEL=INFO
+ENV LOG_DIR=/var/log/webcat
+ENV SERPER_API_KEY=""
+ENV WEBCAT_API_KEY=""
+
+# Use entrypoint to configure auth before starting
+ENTRYPOINT ["/entrypoint.sh"]
