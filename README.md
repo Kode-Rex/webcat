@@ -105,17 +105,26 @@ make mcp        # Start MCP server
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional, falls back to DuckDuckGo if not set) |
+| `PERPLEXITY_API_KEY` | *(none)* | Perplexity API key for deep research tool (optional, get at https://www.perplexity.ai/settings/api) |
 | `WEBCAT_API_KEY` | *(none)* | Bearer token for authentication (optional, if set all requests must include `Authorization: Bearer <token>`) |
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `LOG_DIR` | `/tmp` | Log file directory |
+| `MAX_CONTENT_LENGTH` | `1000000` | Maximum characters to return per scraped article |
 
-### Get a Serper API Key
+### Get API Keys
 
+**Serper API (for web search):**
 1. Visit [serper.dev](https://serper.dev)
 2. Sign up for free tier (2,500 searches/month)
 3. Copy your API key
 4. Add to `.env` file: `SERPER_API_KEY=your_key`
+
+**Perplexity API (for deep research):**
+1. Visit [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api)
+2. Sign up and get your API key
+3. Copy your API key
+4. Add to `.env` file: `PERPLEXITY_API_KEY=your_key`
 
 ### Enable Authentication (Optional)
 

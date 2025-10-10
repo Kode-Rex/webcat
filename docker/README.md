@@ -50,9 +50,11 @@ docker-compose up
 ### Environment Variables
 
 - `SERPER_API_KEY`: **Optional** - Serper API key for premium search (falls back to DuckDuckGo if not set)
+- `PERPLEXITY_API_KEY`: **Optional** - Perplexity API key for deep research tool (get key at https://www.perplexity.ai/settings/api)
 - `PORT`: Port to run the server on (default: 8000)
 - `LOG_LEVEL`: Logging level (default: INFO)
 - `LOG_DIR`: Directory for log files (default: /tmp)
+- `MAX_CONTENT_LENGTH`: Maximum characters to return per scraped article (default: 1000000)
 
 ### Simplified Setup
 
@@ -78,7 +80,14 @@ The server runs on **FastMCP** and exposes MCP protocol endpoints:
    - Falls back to DuckDuckGo automatically
    - Returns full webpage content in markdown format
 
-2. **`health_check`** - Check server health status
+2. **`deep_research`** - Comprehensive deep research (NEW!)
+   - Uses Perplexity AI's sonar-deep-research model
+   - Performs dozens of searches and reads hundreds of sources
+   - Synthesizes findings into comprehensive reports
+   - Takes 2-4 minutes (what would take humans many hours)
+   - Configurable research effort: low, medium, high
+
+3. **`health_check`** - Check server health status
 
 ## Testing the Server
 
