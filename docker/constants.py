@@ -8,7 +8,7 @@
 import os
 
 # Application version
-VERSION = "2.3.1"
+VERSION = "2.5.0"
 
 # Service information
 SERVICE_NAME = "WebCat MCP Server"
