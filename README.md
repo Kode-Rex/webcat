@@ -2,10 +2,28 @@
 
 **Web search and content extraction for AI models via Model Context Protocol (MCP)**
 
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/Kode-Rex/webcat)
+[![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)](https://github.com/Kode-Rex/webcat)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-multi--platform-blue.svg)](https://hub.docker.com/r/tmfrisinger/webcat)
 
 ## Quick Start
+
+### Docker (Recommended)
+
+```bash
+# Run with Docker (no setup required)
+docker run -p 8000:8000 tmfrisinger/webcat:latest
+
+# With Serper API key for premium search
+docker run -p 8000:8000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:latest
+
+# With authentication enabled
+docker run -p 8000:8000 -e WEBCAT_API_KEY=your_token tmfrisinger/webcat:latest
+```
+
+**Supports:** linux/amd64, linux/arm64 (Intel/AMD, Apple Silicon, AWS Graviton)
+
+### Local Development
 
 ```bash
 cd docker
@@ -14,8 +32,9 @@ python -m pip install -e ".[dev]"
 # Start demo server with UI
 python simple_demo.py
 
-# Open demo client
-open http://localhost:8000/demo
+# Or use make commands
+make dev        # Start with auto-reload
+make dev-demo   # Start demo with auto-reload
 ```
 
 ![WebCat Demo Client](assets/webcat-demo-client.png)
@@ -23,23 +42,43 @@ open http://localhost:8000/demo
 ## What is WebCat?
 
 WebCat is an **MCP (Model Context Protocol) server** that provides AI models with:
-- 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free)
-- 📄 **Content Extraction** - Clean markdown conversion with Trafilatura
+- 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free fallback)
+- 📄 **Content Extraction** - Clean markdown conversion with Readability + html2text
 - 🌐 **SSE Streaming** - Real-time results via Server-Sent Events
 - 🎨 **Demo UI** - Interactive testing interface
+- 🐳 **Multi-Platform Docker** - Works on Intel, ARM, and Apple Silicon
 
-Built with **FastAPI** and **FastMCP** for seamless AI integration.
+Built with **FastAPI**, **FastMCP**, and **Readability** for seamless AI integration.
 
 ## Features
 
-- ✅ **Optional Authentication** - Bearer token auth when needed, or run without
+- ✅ **Optional Authentication** - Bearer token auth when needed, or run without (v2.3.1)
 - ✅ **Automatic Fallback** - Serper API → DuckDuckGo if needed
-- ✅ **Smart Content Extraction** - Trafilatura removes navigation/ads/chrome
-- ✅ **MCP Compliant** - Works with Claude Desktop, LiteLLM, etc.
-- ✅ **Rate Limited** - Configurable protection
+- ✅ **Smart Content Extraction** - Readability + html2text removes navigation/ads/chrome
+- ✅ **MCP Compliant** - Works with Claude Desktop, LiteLLM, and other MCP clients
 - ✅ **Parallel Processing** - Fast concurrent scraping
+- ✅ **Multi-Platform Docker** - Linux (amd64/arm64) support
 
 ## Installation & Usage
+
+### Docker Deployment
+
+```bash
+# Quick start - no configuration needed
+docker run -p 8000:8000 tmfrisinger/webcat:latest
+
+# With environment variables
+docker run -p 8000:8000 \
+  -e SERPER_API_KEY=your_key \
+  -e WEBCAT_API_KEY=your_token \
+  tmfrisinger/webcat:latest
+
+# Using docker-compose
+cd docker
+docker-compose up
+```
+
+### Local Development
 
 ```bash
 cd docker
@@ -48,11 +87,13 @@ python -m pip install -e ".[dev]"
 # Configure environment (optional)
 echo "SERPER_API_KEY=your_key" > .env
 
-# Start MCP server
-python mcp_server.py
+# Development mode with auto-reload
+make dev        # Start MCP server with auto-reload
+make dev-demo   # Start demo server with auto-reload
 
-# Or start demo server with UI
-python simple_demo.py
+# Production mode
+make mcp        # Start MCP server
+make demo       # Start demo server
 ```
 
 ## Available Endpoints
@@ -71,13 +112,11 @@ python simple_demo.py
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional) |
+| `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional, falls back to DuckDuckGo if not set) |
 | `WEBCAT_API_KEY` | *(none)* | Bearer token for authentication (optional, if set all requests must include `Authorization: Bearer <token>`) |
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `LOG_DIR` | `/tmp` | Log file directory |
-| `RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
-| `RATE_LIMIT_MAX_REQUESTS` | `10` | Max requests per window |
 
 ### Get a Serper API Key
 
@@ -114,65 +153,100 @@ MCP Client (Claude, LiteLLM)
     ↓
 FastMCP Server (SSE Transport)
     ↓
+Authentication (optional bearer token)
+    ↓
 Search Decision
     ├─ Serper API (premium) → Content Scraper
     └─ DuckDuckGo (free)    → Content Scraper
                                     ↓
-                            Trafilatura (markdown)
+                            Readability + html2text
                                     ↓
-                            Structured Response
+                            Markdown Response
 ```
+
+**Tech Stack:**
+- **FastAPI** - High-performance async web framework
+- **FastMCP** - MCP protocol implementation with SSE transport
+- **Readability** - Content extraction (removes navigation/ads)
+- **html2text** - HTML to markdown conversion
+- **Serper/DuckDuckGo** - Search APIs with automatic fallback
 
 ## Testing
 
 ```bash
 cd docker
 
-# Run all tests
+# Run all unit tests
+make test
+# OR
 python -m pytest tests/unit -v
 
-# With coverage
+# With coverage report
+make test-coverage
+# OR
 python -m pytest tests/unit --cov=. --cov-report=term --cov-report=html
 
-# CI-safe (no external dependencies)
+# CI-safe tests (no external dependencies)
 python -m pytest -v -m "not integration"
+
+# Run specific test file
+python -m pytest tests/unit/services/test_content_scraper.py -v
 ```
 
-**Current test coverage:** 70%+ across all modules
+**Current test coverage:** 70%+ across all modules (enforced in CI)
 
 ## Development
 
 ```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
+# First-time setup
+make setup-dev   # Install all dependencies + pre-commit hooks
 
-# Format code
-make format
+# Development workflow
+make dev         # Start server with auto-reload
+make format      # Auto-format code (Black + isort)
+make lint        # Check code quality (flake8)
+make test        # Run unit tests
 
-# Lint code
-make lint
+# Before committing
+make ci-fast     # Quick validation (~30 seconds)
+# OR
+make ci          # Full validation with security checks (~2-3 minutes)
 
-# Run tests
-make test
-
-# Full CI check
-make ci
+# Code quality tools
+make format-check   # Check formatting without changes
+make security       # Run bandit security scanner
+make audit          # Check dependency vulnerabilities
 ```
+
+**Pre-commit Hooks:**
+Hooks run automatically on `git commit` to ensure code quality. Install with `make setup-dev`.
 
 ## Project Structure
 
 ```
 docker/
-├── mcp_server.py          # Main MCP server
-├── simple_demo.py         # Demo server with UI
-├── clients/               # Serper & DuckDuckGo clients
-├── services/              # Content scraping & search
+├── mcp_server.py          # Main MCP server (FastMCP)
+├── simple_demo.py         # Demo server with interactive UI
+├── health.py              # Health check endpoint
+├── api_tools.py           # API tooling utilities
+├── clients/               # External API clients
+│   ├── serper_client.py  # Serper API integration
+│   └── duckduckgo_client.py  # DuckDuckGo fallback
+├── services/              # Core business logic
+│   ├── search_service.py # Search orchestration
+│   └── content_scraper.py # Readability + html2text
 ├── tools/                 # MCP tool implementations
+│   └── search_tool.py    # Search tool with auth
 ├── models/                # Pydantic data models
-│   ├── domain/           # Domain entities
-│   └── responses/        # API responses
-├── endpoints/            # FastAPI endpoints
-└── tests/                # Comprehensive test suite
+│   ├── domain/           # Domain entities (SearchResult, etc.)
+│   └── responses/        # API response models
+├── utils/                 # Shared utilities
+│   └── auth.py           # Bearer token authentication
+├── endpoints/             # FastAPI endpoints
+├── tests/                 # Comprehensive test suite
+│   ├── unit/             # Unit tests (mocked dependencies)
+│   └── integration/      # Integration tests (external deps)
+└── pyproject.toml         # Project config + dependencies
 ```
 
 ## Search Quality Comparison
@@ -185,12 +259,39 @@ docker/
 | **Speed** | Fast | Fast |
 | **Rate Limits** | 2,500/month (free tier) | None |
 
+## Docker Multi-Platform Support
+
+WebCat supports multiple architectures for broad deployment compatibility:
+
+```bash
+# Build locally for multiple platforms
+cd docker
+./build.sh  # Builds for linux/amd64 and linux/arm64
+
+# Manual multi-platform build and push
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t tmfrisinger/webcat:2.3.1 \
+  -t tmfrisinger/webcat:latest \
+  -f Dockerfile --push .
+
+# Verify multi-platform support
+docker buildx imagetools inspect tmfrisinger/webcat:latest
+```
+
+**Automated Releases:**
+Push a version tag to trigger automated multi-platform builds via GitHub Actions:
+```bash
+git tag v2.3.1
+git push origin v2.3.1
+```
+
 ## Limitations
 
 - **Text-focused:** Optimized for article content, not multimedia
-- **Rate limits:** Respects configured limits to prevent abuse
-- **No JavaScript:** Cannot scrape dynamic JS-rendered content
+- **No JavaScript:** Cannot scrape dynamic JS-rendered content (uses static HTML)
 - **PDF support:** Detection only, not full extraction
+- **Python 3.11 required:** Not compatible with 3.10 or 3.12
+- **External API limits:** Subject to Serper API rate limits (2,500/month free tier)
 
 ## Contributing
 
@@ -216,4 +317,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Version 2.2.0** | Built with ❤️ using FastMCP, FastAPI, and Trafilatura
+**Version 2.3.1** | Built with FastMCP, FastAPI, Readability, and html2text
