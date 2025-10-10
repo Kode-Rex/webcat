@@ -14,6 +14,11 @@ import logging
 import os
 from typing import Any, Optional
 
+try:
+    from fastmcp import Context
+except ImportError:
+    Context = None  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,11 +46,23 @@ def validate_bearer_token(ctx: Optional[Any] = None) -> tuple[bool, Optional[str
         return False, "Authentication required: missing bearer token"
 
     # Try to extract Authorization header from context
-    # FastMCP may provide headers in various ways depending on transport
+    # FastMCP provides Context object with get_http_request() method
     headers = None
-    if hasattr(ctx, "headers"):
+
+    # Handle FastMCP Context object
+    if Context and isinstance(ctx, Context):
+        try:
+            request = ctx.get_http_request()
+            if request and hasattr(request, "headers"):
+                headers = dict(request.headers)
+        except Exception as e:
+            logger.warning(f"Failed to get HTTP request from context: {e}")
+
+    # Fallback: try direct attribute access
+    if headers is None and hasattr(ctx, "headers"):
         headers = ctx.headers
-    elif isinstance(ctx, dict) and "headers" in ctx:
+    # Fallback: try dict access
+    elif headers is None and isinstance(ctx, dict) and "headers" in ctx:
         headers = ctx["headers"]
 
     if headers is None:

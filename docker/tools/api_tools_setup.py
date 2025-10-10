@@ -10,7 +10,7 @@ import os
 import time
 from typing import Any, Dict
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
 from constants import CAPABILITIES, SERVICE_NAME, VERSION
 from models.api_responses import (
@@ -22,6 +22,7 @@ from models.api_responses import (
 from models.search_result import SearchResult
 from services.content_scraper import scrape_search_result
 from services.search_orchestrator import execute_search
+from utils.auth import validate_bearer_token
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,24 @@ def setup_search_tool(mcp: FastMCP, search_func):
         name="search",
         description="Search the web for information using Serper API or DuckDuckGo fallback",
     )
-    async def search_tool(query: str, max_results: int = 5) -> dict:
+    async def search_tool(query: str, ctx: Context, max_results: int = 5) -> dict:
         """Search the web for information on a given query."""
         try:
+            # Validate authentication if WEBCAT_API_KEY is set
+            is_valid, error_msg = validate_bearer_token(ctx)
+            if not is_valid:
+                logger.warning(f"Authentication failed: {error_msg}")
+                response = APISearchToolResponse(
+                    success=False,
+                    query=query,
+                    max_results=max_results,
+                    search_source="none",
+                    results=[],
+                    total_found=0,
+                    error=error_msg,
+                )
+                return response.model_dump()
+
             logger.info(
                 f"Processing search request: {query} (max {max_results} results)"
             )
