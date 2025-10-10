@@ -78,8 +78,10 @@ def main():
             print(f"📡 WebCat MCP Server: http://{args.host}:{args.port}/mcp")
             print("✨ Ready for MCP connections!")
 
-            # Run the FastMCP server
-            mcp_server.run(transport="sse", host=args.host, port=args.port, path="/mcp")
+            # Run the FastMCP server with modern HTTP transport
+            mcp_server.run(
+                transport="http", host=args.host, port=args.port, path="/mcp"
+            )
         except ImportError as e:
             print(f"❌ Error importing MCP server: {e}")
             print("Make sure all dependencies are installed.")

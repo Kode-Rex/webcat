@@ -79,9 +79,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logging.info(f"Starting FastMCP server on port {port}")
 
-    # Run the server with SSE transport for LiteLLM compatibility
+    # Run the server with modern HTTP transport (Streamable HTTP with JSON-RPC 2.0)
     mcp_server.run(
-        transport="sse",
+        transport="http",
         host="0.0.0.0",
         port=port,
         path="/mcp",  # Explicit path for MCP endpoint

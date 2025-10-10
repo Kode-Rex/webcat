@@ -8,16 +8,16 @@ WebCat is a **Model Context Protocol (MCP) server** that provides web search and
 
 1. **Web Search Tool**: Search the web using Serper API or DuckDuckGo fallback
 2. **Content Extraction**: Full webpage scraping with markdown conversion using Readability
-3. **MCP Compliance**: SSE transport for compatibility with Claude Desktop and LiteLLM
+3. **MCP Compliance**: Streamable HTTP transport with JSON-RPC 2.0 for compatibility with all MCP clients
 
-**Tech Stack**: Python, FastAPI, FastMCP, BeautifulSoup, Readability, html2text, Serper/DuckDuckGo
+**Tech Stack**: Python, FastMCP, BeautifulSoup, Readability, html2text, Serper/DuckDuckGo
 
 ## Architecture
 
 ### High-Level Flow
 
 ```
-MCP Client → FastMCP Server (SSE) → Search Tool Decision
+MCP Client → FastMCP Server (Streamable HTTP + JSON-RPC 2.0) → Search Tool Decision
 │
 ├─ Serper API (premium): Google-powered search with better ranking
 │
@@ -28,8 +28,8 @@ MCP Client → FastMCP Server (SSE) → Search Tool Decision
 
 ### Key Components
 
-**MCP Server (Python/FastAPI)**:
-- `docker/mcp_server.py` - FastMCP server with SSE transport
+**MCP Server (Python/FastMCP)**:
+- `docker/mcp_server.py` - FastMCP server with Streamable HTTP transport
 - `docker/health.py` - Health check and status endpoints
 - `docker/demo_server.py` - Demo client interface
 - `docker/api_tools.py` - Additional API tooling
@@ -418,8 +418,8 @@ def fetch_newsource_search_results(query: str) -> List[Dict[str, Any]]:
 
 ## Important Notes
 
-- **MCP Protocol**: Uses SSE (Server-Sent Events) transport for LiteLLM compatibility
-- **No Authentication**: Simplified setup - no API keys required for basic functionality
+- **MCP Protocol**: Uses Streamable HTTP transport with JSON-RPC 2.0 (modern, future-proof)
+- **Optional Authentication**: Bearer token auth available but not required for basic functionality
 - **Automatic Fallback**: Serper API → DuckDuckGo if no key or if Serper fails
 - **Content Processing**: Readability + html2text for clean markdown conversion
 - **Rate Limiting**: Default 10 requests per 60 seconds (configurable via env vars)

@@ -41,10 +41,10 @@ python mcp_server.py
 WebCat is an **MCP (Model Context Protocol) server** that provides AI models with:
 - 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free fallback)
 - 📄 **Content Extraction** - Clean markdown conversion with Readability + html2text
-- 🌐 **SSE Streaming** - Real-time results via Server-Sent Events
+- 🌐 **Modern HTTP Transport** - Streamable HTTP with JSON-RPC 2.0
 - 🐳 **Multi-Platform Docker** - Works on Intel, ARM, and Apple Silicon
 
-Built with **FastAPI**, **FastMCP**, and **Readability** for seamless AI integration.
+Built with **FastMCP**, **Readability**, and **html2text** for seamless AI integration.
 
 ## Features
 
@@ -96,8 +96,7 @@ make mcp        # Start MCP server
 |----------|-------------|
 | `http://localhost:8000/health` | 💗 Health check |
 | `http://localhost:8000/status` | 📊 Server status |
-| `http://localhost:8000/mcp` | 🛠️ MCP protocol endpoint |
-| `http://localhost:8000/sse` | 🔗 SSE streaming |
+| `http://localhost:8000/mcp` | 🛠️ MCP protocol endpoint (Streamable HTTP with JSON-RPC 2.0) |
 
 ## Configuration
 
@@ -144,7 +143,7 @@ WebCat exposes these tools via MCP:
 ```
 MCP Client (Claude, LiteLLM)
     ↓
-FastMCP Server (SSE Transport)
+FastMCP Server (Streamable HTTP with JSON-RPC 2.0)
     ↓
 Authentication (optional bearer token)
     ↓
@@ -158,8 +157,8 @@ Search Decision
 ```
 
 **Tech Stack:**
-- **FastAPI** - High-performance async web framework
-- **FastMCP** - MCP protocol implementation with SSE transport
+- **FastMCP** - MCP protocol implementation with modern HTTP transport
+- **JSON-RPC 2.0** - Standard protocol for client-server communication
 - **Readability** - Content extraction (removes navigation/ads)
 - **html2text** - HTML to markdown conversion
 - **Serper/DuckDuckGo** - Search APIs with automatic fallback
