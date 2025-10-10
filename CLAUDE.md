@@ -85,10 +85,17 @@ docker run -p 8000:8000 tmfrisinger/webcat:latest
 # With Serper API key for premium search
 docker run -p 8000:8000 -e SERPER_API_KEY=your_key tmfrisinger/webcat:latest
 
-# Build and run locally
+# Build and run locally (multi-platform support)
 cd docker
-./build.sh
+./build.sh  # Builds for linux/amd64 and linux/arm64
 docker-compose up
+
+# Build multi-platform and push to registry
+cd docker
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t tmfrisinger/webcat:2.3.0 \
+  -t tmfrisinger/webcat:latest \
+  -f Dockerfile --push .
 
 # Production mode (no auto-reload)
 make mcp         # Start MCP server
@@ -418,8 +425,67 @@ def fetch_newsource_search_results(query: str) -> List[Dict[str, Any]]:
 - **Rate Limiting**: Default 10 requests per 60 seconds (configurable via env vars)
 - **Test Isolation**: Use `@pytest.mark.integration` for tests requiring external services
 - **Docker First**: All deployment via Docker, local Python only for development
+- **Multi-Platform Docker**: Images support both linux/amd64 and linux/arm64 architectures
 - **Coverage Threshold**: 70% minimum enforced in CI
 - **Python Version**: Requires Python 3.11 exactly (not 3.10 or 3.12)
+
+## Docker Multi-Platform Builds
+
+WebCat Docker images support multiple architectures for broad compatibility:
+
+### Supported Platforms
+- **linux/amd64**: Intel/AMD x86_64 processors (standard servers, Intel Macs)
+- **linux/arm64**: ARM64 processors (Apple Silicon, AWS Graviton, Raspberry Pi)
+
+### Local Multi-Platform Build
+The `docker/build.sh` script automatically builds for both platforms using Docker buildx:
+
+```bash
+cd docker
+./build.sh  # Builds for linux/amd64 and linux/arm64
+```
+
+### Manual Multi-Platform Build and Push
+To build and push multi-platform images manually:
+
+```bash
+# Ensure buildx is available
+docker buildx version
+
+# Build and push to registry
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t tmfrisinger/webcat:2.3.0 \
+  -t tmfrisinger/webcat:latest \
+  -f docker/Dockerfile --push .
+```
+
+### Automated GitHub Actions Workflow
+The `.github/workflows/docker-publish.yml` workflow automates multi-platform builds:
+
+**Trigger on version tags:**
+```bash
+git tag v2.4.0
+git push origin v2.4.0
+```
+
+**Manual trigger:**
+- Go to Actions → "Build and Push Multi-Platform Docker Image"
+- Click "Run workflow"
+- Enter version (e.g., "2.4.0")
+
+The workflow:
+- Builds for linux/amd64 and linux/arm64
+- Tags with semantic versioning (2.4.0, 2.4, latest)
+- Pushes to Docker Hub automatically
+- Includes build caching for faster builds
+
+### Verifying Multi-Platform Support
+Check that an image supports multiple platforms:
+
+```bash
+docker buildx imagetools inspect tmfrisinger/webcat:latest
+# Should show manifests for linux/amd64 and linux/arm64
+```
 
 ## Engineering Principles
 
