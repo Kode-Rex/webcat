@@ -19,8 +19,6 @@ CAPABILITIES = [
     "Content extraction and scraping",
     "Markdown conversion",
     "FastMCP protocol support",
-    "SSE streaming",
-    "Demo UI client",
 ]
 
 # Content limits

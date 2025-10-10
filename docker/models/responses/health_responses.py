@@ -44,11 +44,9 @@ def get_server_configuration() -> dict:
 def get_server_endpoints() -> dict:
     """Get server endpoints dictionary."""
     return {
-        "main_mcp": "/mcp",
-        "sse_demo": "/sse",
+        "mcp": "/mcp",
         "health": "/health",
         "status": "/status",
-        "demo_client": "/demo",
     }
 
 
@@ -81,10 +79,9 @@ def get_root_info() -> dict:
         "version": VERSION,
         "description": "Web search and content extraction with MCP protocol support",
         "endpoints": {
-            "demo_client": "/demo",
+            "mcp": "/mcp",
             "health": "/health",
             "status": "/status",
-            "mcp_sse": "/mcp",
         },
-        "documentation": "Access /demo for the demo interface",
+        "documentation": "MCP server - connect via SSE at /mcp/sse endpoint",
     }
