@@ -44,16 +44,17 @@ import os
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
-from tools.health_check_tool import health_check_tool
-from tools.search_tool import search_tool
 from utils.logging_config import setup_logging
+
+# Load environment variables FIRST before importing tools
+load_dotenv()
 
 # Set up logging
 logger = setup_logging("webcat.log")
 
-# Load environment variables
-load_dotenv()
-
+# Import tools AFTER loading .env so they can access environment variables
+from tools.health_check_tool import health_check_tool  # noqa: E402
+from tools.search_tool import search_tool  # noqa: E402
 
 # Log configuration status
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
