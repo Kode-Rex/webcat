@@ -35,19 +35,22 @@ def _convert_organic_results(organic_results: list) -> List[APISearchResult]:
     ]
 
 
-def fetch_search_results(query: str, api_key: str) -> List[APISearchResult]:
+def fetch_search_results(
+    query: str, api_key: str, max_results: int = 5
+) -> List[APISearchResult]:
     """
     Fetches search results from the Serper API.
 
     Args:
         query: The search query
         api_key: The Serper API key
+        max_results: Maximum number of results to return (default: 5)
 
     Returns:
         A list of APISearchResult objects from Serper API
     """
     url = "https://google.serper.dev/search"
-    payload = json.dumps({"q": query})
+    payload = json.dumps({"q": query, "num": max_results})
     headers = {"X-API-KEY": api_key, "Content-Type": "application/json"}
 
     try:
@@ -57,7 +60,8 @@ def fetch_search_results(query: str, api_key: str) -> List[APISearchResult]:
 
         # Process and return the search results
         if "organic" in data:
-            return _convert_organic_results(data["organic"])
+            results = _convert_organic_results(data["organic"])
+            return results[:max_results]  # Ensure we don't exceed max_results
         return []
     except Exception as e:
         logger.error(f"Error fetching search results: {str(e)}")

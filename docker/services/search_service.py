@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_with_fallback(
-    query: str, serper_api_key: str = ""
+    query: str, serper_api_key: str = "", max_results: int = 5
 ) -> Tuple[List[APISearchResult], str]:
     """
     Fetch search results with automatic fallback from Serper to DuckDuckGo.
@@ -24,6 +24,7 @@ def fetch_with_fallback(
     Args:
         query: Search query string
         serper_api_key: Optional Serper API key
+        max_results: Maximum number of results to return (default: 5)
 
     Returns:
         Tuple of (results list, source name)
@@ -35,13 +36,13 @@ def fetch_with_fallback(
     if serper_api_key:
         logger.info("Using Serper API for search")
         search_source = "Serper API"
-        api_results = fetch_search_results(query, serper_api_key)
+        api_results = fetch_search_results(query, serper_api_key, max_results)
 
     # Fall back to DuckDuckGo if no API key or no results from Serper
     if not api_results:
         _log_fallback_reason(serper_api_key)
         search_source = "DuckDuckGo (free fallback)"
-        api_results = fetch_duckduckgo_search_results(query)
+        api_results = fetch_duckduckgo_search_results(query, max_results)
 
     return api_results, search_source
 
