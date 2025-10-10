@@ -42,7 +42,7 @@ def create_demo_app():
     app = FastAPI(
         title="WebCat MCP Server",
         description="WebCat server with FastMCP integration",
-        version="2.2.0",
+        version="2.3.1",
     )
 
     app.add_middleware(

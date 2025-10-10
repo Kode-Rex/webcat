@@ -6,7 +6,7 @@
 """Constants for WebCat application."""
 
 # Application version
-VERSION = "2.3.0"
+VERSION = "2.3.1"
 
 # Service information
 SERVICE_NAME = "WebCat MCP Server"
