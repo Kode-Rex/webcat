@@ -1,5 +1,5 @@
 # WebCat MCP Server - Development Makefile
-.PHONY: help install install-dev format lint test test-coverage clean build docker-build docker-run demo health check-all pre-commit setup-dev
+.PHONY: help install install-dev format lint test test-coverage clean build docker-build docker-run health check-all pre-commit setup-dev
 
 # Default target
 help: ## Show this help message
@@ -108,11 +108,7 @@ docker-build: ## Build Docker image
 
 docker-run: ## Run Docker container
 	@echo "🐳 Running Docker container..."
-	docker run -p 8000:8000 -p 8001:8001 -e WEBCAT_MODE=demo webcat:latest
-
-docker-run-prod: ## Run Docker container in production mode
-	@echo "🐳 Running Docker container in production mode..."
-	docker run -p 8000:8000 -e WEBCAT_MODE=mcp webcat:latest
+	docker run -p 8000:8000 webcat:latest
 
 # Development servers
 dev: ## Start MCP server with auto-reload (development mode)
@@ -123,23 +119,6 @@ dev: ## Start MCP server with auto-reload (development mode)
 	@echo ""
 	cd docker && PYTHONPATH=. watchmedo auto-restart --recursive --pattern="*.py" --directory=. -- python mcp_server.py
 
-dev-demo: ## Start demo server with auto-reload (development mode)
-	@echo "🚀 Starting demo server with auto-reload..."
-	@echo "🎨 Demo client: http://localhost:8000/client"
-	@echo "💗 Health check: http://localhost:8000/health"
-	@echo "📊 Status: http://localhost:8000/status"
-	@echo "🔄 Auto-reload enabled - edit files to see changes"
-	@echo ""
-	cd docker && PYTHONPATH=. watchmedo auto-restart --recursive --pattern="*.py" --directory=. -- python simple_demo.py
-
-demo: ## Start demo server locally (production mode)
-	@echo "🎨 Starting demo server..."
-	cd docker && python cli.py --mode demo --port 8000
-
-demo-bg: ## Start demo server in background
-	@echo "🎨 Starting demo server in background..."
-	cd docker && nohup python cli.py --mode demo --port 8000 > demo.log 2>&1 &
-	@echo "Demo server started in background. Check demo.log for logs."
 
 mcp: ## Start MCP server locally (production mode)
 	@echo "🛠️ Starting MCP server..."
@@ -148,7 +127,6 @@ mcp: ## Start MCP server locally (production mode)
 stop-bg: ## Stop background servers
 	@echo "🛑 Stopping background servers..."
 	pkill -f "python cli.py" || true
-	pkill -f "python simple_demo.py" || true
 	@echo "Background servers stopped."
 
 # Health and monitoring
@@ -162,7 +140,7 @@ status: ## Check server status
 
 logs: ## Show recent logs
 	@echo "📝 Recent logs..."
-	tail -f docker/demo.log || tail -f /tmp/webcat*.log
+	tail -f /tmp/webcat*.log
 
 # Cleanup
 clean: ## Clean up temporary files and caches

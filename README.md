@@ -2,7 +2,7 @@
 
 **Web search and content extraction for AI models via Model Context Protocol (MCP)**
 
-[![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)](https://github.com/Kode-Rex/webcat)
+[![Version](https://img.shields.io/badge/version-2.3.2-blue.svg)](https://github.com/Kode-Rex/webcat)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-multi--platform-blue.svg)](https://hub.docker.com/r/tmfrisinger/webcat)
 
@@ -29,15 +29,12 @@ docker run -p 8000:8000 -e WEBCAT_API_KEY=your_token tmfrisinger/webcat:latest
 cd docker
 python -m pip install -e ".[dev]"
 
-# Start demo server with UI
-python simple_demo.py
+# Start MCP server with auto-reload
+make dev
 
-# Or use make commands
-make dev        # Start with auto-reload
-make dev-demo   # Start demo with auto-reload
+# Or run directly
+python mcp_server.py
 ```
-
-![WebCat Demo Client](assets/webcat-demo-client.png)
 
 ## What is WebCat?
 
@@ -45,7 +42,6 @@ WebCat is an **MCP (Model Context Protocol) server** that provides AI models wit
 - 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free fallback)
 - 📄 **Content Extraction** - Clean markdown conversion with Readability + html2text
 - 🌐 **SSE Streaming** - Real-time results via Server-Sent Events
-- 🎨 **Demo UI** - Interactive testing interface
 - 🐳 **Multi-Platform Docker** - Works on Intel, ARM, and Apple Silicon
 
 Built with **FastAPI**, **FastMCP**, and **Readability** for seamless AI integration.
@@ -89,18 +85,15 @@ echo "SERPER_API_KEY=your_key" > .env
 
 # Development mode with auto-reload
 make dev        # Start MCP server with auto-reload
-make dev-demo   # Start demo server with auto-reload
 
 # Production mode
 make mcp        # Start MCP server
-make demo       # Start demo server
 ```
 
 ## Available Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `http://localhost:8000/demo` | 🎨 Interactive demo UI |
 | `http://localhost:8000/health` | 💗 Health check |
 | `http://localhost:8000/status` | 📊 Server status |
 | `http://localhost:8000/mcp` | 🛠️ MCP protocol endpoint |
@@ -226,7 +219,7 @@ Hooks run automatically on `git commit` to ensure code quality. Install with `ma
 ```
 docker/
 ├── mcp_server.py          # Main MCP server (FastMCP)
-├── simple_demo.py         # Demo server with interactive UI
+├── cli.py                 # CLI interface for server modes
 ├── health.py              # Health check endpoint
 ├── api_tools.py           # API tooling utilities
 ├── clients/               # External API clients
@@ -270,7 +263,7 @@ cd docker
 
 # Manual multi-platform build and push
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t tmfrisinger/webcat:2.3.1 \
+  -t tmfrisinger/webcat:2.3.2 \
   -t tmfrisinger/webcat:latest \
   -f Dockerfile --push .
 
@@ -281,8 +274,8 @@ docker buildx imagetools inspect tmfrisinger/webcat:latest
 **Automated Releases:**
 Push a version tag to trigger automated multi-platform builds via GitHub Actions:
 ```bash
-git tag v2.3.1
-git push origin v2.3.1
+git tag v2.3.2
+git push origin v2.3.2
 ```
 
 ## Limitations
@@ -317,4 +310,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Version 2.3.1** | Built with FastMCP, FastAPI, Readability, and html2text
+**Version 2.3.2** | Built with FastMCP, FastAPI, Readability, and html2text
