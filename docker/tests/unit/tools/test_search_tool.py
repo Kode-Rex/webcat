@@ -18,14 +18,10 @@ class TestSearchTool:
     """Tests for search tool."""
 
     @pytest.mark.asyncio
-    @patch("tools.search_tool.validate_bearer_token")
     @patch("tools.search_tool.process_search_results")
     @patch("tools.search_tool.fetch_with_fallback")
-    async def test_returns_search_results(
-        self, mock_fetch, mock_process, mock_validate
-    ):
+    async def test_returns_search_results(self, mock_fetch, mock_process):
         # Arrange
-        mock_validate.return_value = (True, None)
         api_results = [an_api_search_result().build()]
         processed = [
             SearchResult(
@@ -39,7 +35,7 @@ class TestSearchTool:
         mock_process.return_value = processed
 
         # Act
-        result = await search_tool("test query")
+        result = await search_tool("test query", max_results=5)
 
         # Assert
         assert result["query"] == "test query"
@@ -48,15 +44,13 @@ class TestSearchTool:
         assert result["results"][0]["title"] == "Test"
 
     @pytest.mark.asyncio
-    @patch("tools.search_tool.validate_bearer_token")
     @patch("tools.search_tool.fetch_with_fallback")
-    async def test_returns_error_when_no_results(self, mock_fetch, mock_validate):
+    async def test_returns_error_when_no_results(self, mock_fetch):
         # Arrange
-        mock_validate.return_value = (True, None)
         mock_fetch.return_value = ([], "DuckDuckGo (free fallback)")
 
         # Act
-        result = await search_tool("test query")
+        result = await search_tool("test query", max_results=5)
 
         # Assert
         assert result["query"] == "test query"
@@ -64,14 +58,10 @@ class TestSearchTool:
         assert len(result["results"]) == 0
 
     @pytest.mark.asyncio
-    @patch("tools.search_tool.validate_bearer_token")
     @patch("tools.search_tool.process_search_results")
     @patch("tools.search_tool.fetch_with_fallback")
-    async def test_processes_results_correctly(
-        self, mock_fetch, mock_process, mock_validate
-    ):
+    async def test_processes_results_correctly(self, mock_fetch, mock_process):
         # Arrange
-        mock_validate.return_value = (True, None)
         api_results = [
             an_api_search_result()
             .with_title("T")
@@ -83,35 +73,33 @@ class TestSearchTool:
         mock_process.return_value = []
 
         # Act
-        await search_tool("query")
+        await search_tool("query", max_results=5)
 
         # Assert
         mock_process.assert_called_once_with(api_results)
 
     @pytest.mark.asyncio
-    @patch("tools.search_tool.validate_bearer_token")
-    async def test_returns_error_when_authentication_fails(self, mock_validate):
+    @patch("tools.search_tool.fetch_with_fallback")
+    async def test_respects_max_results_parameter(self, mock_fetch):
         # Arrange
-        mock_validate.return_value = (False, "Invalid bearer token")
+        api_results = [an_api_search_result().build()]
+        mock_fetch.return_value = (api_results, "Serper API")
 
         # Act
-        result = await search_tool("test query")
+        await search_tool("test query", max_results=10)
 
         # Assert
-        assert result["query"] == "test query"
-        assert result["error"] == "Invalid bearer token"
-        assert result["search_source"] == "none"
-        assert len(result["results"]) == 0
+        mock_fetch.assert_called_once_with("test query", "", 10)
 
     @pytest.mark.asyncio
-    @patch("tools.search_tool.validate_bearer_token")
-    async def test_passes_context_to_authentication(self, mock_validate):
+    @patch("tools.search_tool.fetch_with_fallback")
+    async def test_uses_default_max_results(self, mock_fetch):
         # Arrange
-        mock_validate.return_value = (False, "Auth error")
-        ctx = {"headers": {"Authorization": "Bearer test"}}
+        api_results = [an_api_search_result().build()]
+        mock_fetch.return_value = (api_results, "Serper API")
 
         # Act
-        await search_tool("query", ctx=ctx)
+        await search_tool("test query")
 
         # Assert
-        mock_validate.assert_called_once_with(ctx)
+        mock_fetch.assert_called_once_with("test query", "", 5)
