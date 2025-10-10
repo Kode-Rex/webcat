@@ -29,7 +29,7 @@ class TestSearchServiceWithSerperKey:
         assert source == "Serper API"
         assert len(results) == 1
         assert results[0].title == "Serper Result"
-        mock_serper.assert_called_once_with("test query", "fake_key")
+        mock_serper.assert_called_once_with("test query", "fake_key", 5)
 
     @patch("services.search_service.fetch_duckduckgo_search_results")
     @patch("services.search_service.fetch_search_results")
