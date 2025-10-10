@@ -62,7 +62,8 @@ logging.info(
     f"SERPER API key: {'Set' if SERPER_API_KEY else 'Not set (using DuckDuckGo fallback)'}"
 )
 
-# Create FastMCP instance (no authentication required)
+
+# Create FastMCP instance
 mcp_server = FastMCP("WebCat Search")
 
 # Register tools with MCP server
@@ -78,9 +79,12 @@ mcp_server.tool(name="health_check", description="Check the health of the server
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    logging.info(f"Starting FastMCP server on port {port}")
+    logging.info(
+        f"Starting FastMCP server on port {port} (no auth - use nginx proxy for auth)"
+    )
 
     # Run the server with modern HTTP transport (Streamable HTTP with JSON-RPC 2.0)
+    # NOTE: Authentication should be handled by reverse proxy (nginx) not in-app
     mcp_server.run(
         transport="http",
         host="0.0.0.0",

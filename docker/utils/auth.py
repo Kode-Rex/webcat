@@ -20,6 +20,7 @@ except ImportError:
     Context = None  # type: ignore
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def validate_bearer_token(ctx: Optional[Any] = None) -> tuple[bool, Optional[str]]:
@@ -45,6 +46,12 @@ def validate_bearer_token(ctx: Optional[Any] = None) -> tuple[bool, Optional[str
         logger.warning("Authentication required but no context provided")
         return False, "Authentication required: missing bearer token"
 
+    # Debug: log context type and attributes
+    logger.debug(f"Context type: {type(ctx)}")
+    logger.debug(
+        f"Context attributes: {dir(ctx) if hasattr(ctx, '__dir__') else 'N/A'}"
+    )
+
     # Try to extract Authorization header from context
     # FastMCP provides Context object with get_http_request() method
     headers = None
@@ -53,8 +60,10 @@ def validate_bearer_token(ctx: Optional[Any] = None) -> tuple[bool, Optional[str
     if Context and isinstance(ctx, Context):
         try:
             request = ctx.get_http_request()
+            logger.debug(f"HTTP request: {request}")
             if request and hasattr(request, "headers"):
                 headers = dict(request.headers)
+                logger.debug(f"Extracted headers: {headers}")
         except Exception as e:
             logger.warning(f"Failed to get HTTP request from context: {e}")
 

@@ -13,7 +13,6 @@ from models.search_response import SearchResponse
 from models.search_result import SearchResult
 from services.search_processor import process_search_results
 from services.search_service import fetch_with_fallback
-from utils.auth import validate_bearer_token
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
 
 
-async def search_tool(query: str, ctx=None, max_results: int = 5) -> dict:
+async def search_tool(query: str, max_results: int = 5) -> dict:
     """Search the web for information on a given query.
 
     This MCP tool searches the web using Serper API (premium) or DuckDuckGo
@@ -29,25 +28,12 @@ async def search_tool(query: str, ctx=None, max_results: int = 5) -> dict:
 
     Args:
         query: The search query string
-        ctx: Optional MCP context (may contain authentication headers)
         max_results: Maximum number of results to return (default: 5)
 
     Returns:
         Dict representation of SearchResponse model (for MCP JSON serialization)
     """
     logger.info(f"Processing search request: {query} (max {max_results} results)")
-
-    # Validate authentication if WEBCAT_API_KEY is set
-    is_valid, error_msg = validate_bearer_token(ctx)
-    if not is_valid:
-        logger.warning(f"Authentication failed: {error_msg}")
-        response = SearchResponse(
-            query=query,
-            search_source="none",
-            results=[],
-            error=error_msg,
-        )
-        return response.model_dump()
 
     # Fetch results with automatic fallback
     api_results, search_source = fetch_with_fallback(query, SERPER_API_KEY, max_results)
