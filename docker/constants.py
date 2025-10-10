@@ -24,7 +24,10 @@ CAPABILITIES = [
 ]
 
 # Content limits
-MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", "50000"))
+try:
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", "1000000"))
+except ValueError:
+    MAX_CONTENT_LENGTH = 1000000
 DEFAULT_SEARCH_RESULTS = 5
 
 # Timeout settings

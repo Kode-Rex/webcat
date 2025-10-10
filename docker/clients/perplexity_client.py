@@ -89,5 +89,5 @@ def fetch_perplexity_deep_research(
         return research_report, citation_urls
 
     except Exception as e:
-        logger.error(f"Error fetching Perplexity deep research: {str(e)}")
+        logger.exception(f"Error fetching Perplexity deep research: {str(e)}")
         return "", []

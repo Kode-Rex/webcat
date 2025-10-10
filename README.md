@@ -110,7 +110,7 @@ make mcp        # Start MCP server
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `LOG_DIR` | `/tmp` | Log file directory |
-| `MAX_CONTENT_LENGTH` | `50000` | Maximum characters to return per scraped article |
+| `MAX_CONTENT_LENGTH` | `1000000` | Maximum characters to return per scraped article |
 
 ### Get API Keys
 
