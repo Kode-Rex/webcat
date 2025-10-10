@@ -19,13 +19,15 @@ class TestContentScraperEdgeCases:
     @patch("services.content_scraper.trafilatura.extract")
     @patch("services.content_scraper.requests.get")
     def test_truncates_content_exceeding_max_length(self, mock_get, mock_trafilatura):
-        # Arrange
-        large_content = "<html><body>" + ("x" * 100000) + "</body></html>"
+        # Arrange - content larger than MAX_CONTENT_LENGTH to trigger truncation
+        large_content = (
+            "<html><body>" + ("x" * (MAX_CONTENT_LENGTH + 10000)) + "</body></html>"
+        )
         result = a_search_result().build()
         mock_get.return_value = HttpResponseFactory.success(content=large_content)
 
         # Mock trafilatura to return large content
-        mock_trafilatura.return_value = "x" * 100000
+        mock_trafilatura.return_value = "x" * (MAX_CONTENT_LENGTH + 10000)
 
         # Act
         scraped = scrape_search_result(result)
