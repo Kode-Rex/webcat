@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Serper API client - fetches search results from Serper API."""
+"""Serper API client - fetches search results and scrapes webpages via Serper API."""
 
 import json
 import logging
-from typing import List
+from typing import List, Optional
 
 import requests
 
@@ -66,3 +66,52 @@ def fetch_search_results(
     except Exception as e:
         logger.error(f"Error fetching search results: {str(e)}")
         return []
+
+
+def scrape_webpage(url: str, api_key: str) -> Optional[str]:
+    """
+    Scrapes webpage content using Serper's scrape API.
+
+    Uses Serper's optimized scraping infrastructure to extract clean
+    markdown-formatted content from any URL. Returns text with preserved
+    document structure, including metadata and JSON-LD data.
+
+    Args:
+        url: The webpage URL to scrape
+        api_key: The Serper API key
+
+    Returns:
+        Markdown-formatted content from the webpage, or None if scraping fails
+    """
+    scrape_url = "https://scrape.serper.dev"
+    payload = json.dumps({"url": url})
+    headers = {"X-API-KEY": api_key, "Content-Type": "application/json"}
+
+    try:
+        logger.info(f"Scraping webpage via Serper: {url}")
+        response = requests.post(scrape_url, headers=headers, data=payload, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        # Extract markdown content from response
+        # Serper returns text and optional markdown in the response
+        markdown_content = data.get("text", "")
+
+        if markdown_content:
+            logger.info(
+                f"Successfully scraped {len(markdown_content)} chars from {url}"
+            )
+            return markdown_content
+
+        logger.warning(f"No content returned from Serper scrape for {url}")
+        return None
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout scraping webpage via Serper: {url}")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error scraping webpage via Serper: {str(e)}")
+        return None
+    except Exception as e:
+        logger.exception(f"Unexpected error scraping webpage via Serper: {str(e)}")
+        return None

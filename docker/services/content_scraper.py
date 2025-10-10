@@ -6,10 +6,12 @@
 """Content scraper service - extracts and converts web content to markdown."""
 
 import logging
+import os
 
 import requests
 import trafilatura
 
+from clients.serper_client import scrape_webpage as serper_scrape_webpage
 from constants import MAX_CONTENT_LENGTH, REQUEST_TIMEOUT_SECONDS
 from models.search_result import SearchResult
 
@@ -85,6 +87,9 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
     """
     Scrapes the content of a search result URL and converts it to markdown.
 
+    Uses Serper's scrape API if SERPER_API_KEY is available (faster, more reliable).
+    Falls back to Trafilatura for local scraping if Serper is not configured.
+
     Args:
         result: SearchResult object with URL to scrape
 
@@ -95,7 +100,35 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
         result.content = "Error: Missing URL for content scraping."
         return result
 
+    # Try Serper scraping first if API key is available
+    serper_api_key = os.environ.get("SERPER_API_KEY", "")
+    if serper_api_key:
+        try:
+            logger.info(f"Using Serper scrape API for {result.url}")
+            scraped_content = serper_scrape_webpage(result.url, serper_api_key)
+
+            if scraped_content:
+                # Format with title and source
+                full_content = (
+                    f"# {result.title}\n\n*Source: {result.url}*\n\n{scraped_content}"
+                )
+                result.content = _truncate_if_needed(full_content)
+                logger.info(
+                    f"Successfully scraped via Serper: {len(result.content)} chars"
+                )
+                return result
+
+            logger.warning(
+                f"Serper scrape returned no content for {result.url}, falling back to Trafilatura"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Serper scrape failed for {result.url}: {str(e)}, falling back to Trafilatura"
+            )
+
+    # Fallback to Trafilatura scraping
     try:
+        logger.info(f"Using Trafilatura for {result.url}")
         response = _fetch_content(result.url)
         content_type = response.headers.get("Content-Type", "").lower()
 

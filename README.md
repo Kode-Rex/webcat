@@ -40,17 +40,20 @@ python mcp_server.py
 
 WebCat is an **MCP (Model Context Protocol) server** that provides AI models with:
 - 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free fallback)
-- 📄 **Content Extraction** - Clean markdown conversion with Readability + html2text
+- 📄 **Content Extraction** - Serper scrape API (premium) or Trafilatura (free fallback)
 - 🌐 **Modern HTTP Transport** - Streamable HTTP with JSON-RPC 2.0
 - 🐳 **Multi-Platform Docker** - Works on Intel, ARM, and Apple Silicon
+- 🎯 **Composite Tool** - Single SERPER_API_KEY enables both search + scraping
 
-Built with **FastMCP**, **Readability**, and **html2text** for seamless AI integration.
+Built with **FastMCP**, **Serper.dev**, and **Trafilatura** for seamless AI integration.
 
 ## Features
 
 - ✅ **Optional Authentication** - Bearer token auth when needed, or run without (v2.3.1)
-- ✅ **Automatic Fallback** - Serper API → DuckDuckGo if needed
-- ✅ **Smart Content Extraction** - Readability + html2text removes navigation/ads/chrome
+- ✅ **Composite Search Tool** - Single Serper API key enables both search + scraping
+- ✅ **Automatic Fallback** - Search: Serper → DuckDuckGo | Scraping: Serper → Trafilatura
+- ✅ **Premium Scraping** - Serper's optimized infrastructure for fast, clean content extraction
+- ✅ **Smart Content Extraction** - Returns markdown with preserved document structure
 - ✅ **MCP Compliant** - Works with Claude Desktop, LiteLLM, and other MCP clients
 - ✅ **Parallel Processing** - Fast concurrent scraping
 - ✅ **Multi-Platform Docker** - Linux (amd64/arm64) support
@@ -114,11 +117,12 @@ make mcp        # Start MCP server
 
 ### Get API Keys
 
-**Serper API (for web search):**
+**Serper API (for web search + scraping):**
 1. Visit [serper.dev](https://serper.dev)
-2. Sign up for free tier (2,500 searches/month)
+2. Sign up for free tier (2,500 searches/month + scraping)
 3. Copy your API key
 4. Add to `.env` file: `SERPER_API_KEY=your_key`
+5. **Note:** One API key enables both search AND content scraping!
 
 **Perplexity API (for deep research):**
 1. Visit [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api)
@@ -157,10 +161,8 @@ FastMCP Server (Streamable HTTP with JSON-RPC 2.0)
 Authentication (optional bearer token)
     ↓
 Search Decision
-    ├─ Serper API (premium) → Content Scraper
-    └─ DuckDuckGo (free)    → Content Scraper
-                                    ↓
-                            Readability + html2text
+    ├─ Serper API (premium) → Serper Scrape API (premium)
+    └─ DuckDuckGo (free)    → Trafilatura (free)
                                     ↓
                             Markdown Response
 ```
@@ -168,9 +170,9 @@ Search Decision
 **Tech Stack:**
 - **FastMCP** - MCP protocol implementation with modern HTTP transport
 - **JSON-RPC 2.0** - Standard protocol for client-server communication
-- **Readability** - Content extraction (removes navigation/ads)
-- **html2text** - HTML to markdown conversion
-- **Serper/DuckDuckGo** - Search APIs with automatic fallback
+- **Serper API** - Google-powered search + optimized web scraping
+- **Trafilatura** - Fallback content extraction (removes navigation/ads)
+- **DuckDuckGo** - Free search fallback
 
 ## Testing
 
@@ -231,11 +233,11 @@ docker/
 ├── health.py              # Health check endpoint
 ├── api_tools.py           # API tooling utilities
 ├── clients/               # External API clients
-│   ├── serper_client.py  # Serper API integration
+│   ├── serper_client.py  # Serper API (search + scrape)
 │   └── duckduckgo_client.py  # DuckDuckGo fallback
 ├── services/              # Core business logic
 │   ├── search_service.py # Search orchestration
-│   └── content_scraper.py # Readability + html2text
+│   └── content_scraper.py # Serper scrape → Trafilatura fallback
 ├── tools/                 # MCP tool implementations
 │   └── search_tool.py    # Search tool with auth
 ├── models/                # Pydantic data models
