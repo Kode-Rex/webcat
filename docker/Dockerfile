@@ -23,7 +23,6 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 ENV LOG_LEVEL=INFO
 ENV LOG_DIR=/var/log/webcat
-ENV WEBCAT_MODE=demo
 
 # Expose the port
 EXPOSE 8000
@@ -32,4 +31,4 @@ EXPOSE 8000
 WORKDIR /app/docker
 
 # Command to run the application
-CMD ["python", "cli.py", "--mode", "demo", "--host", "0.0.0.0"]
+CMD ["python", "mcp_server.py"]
