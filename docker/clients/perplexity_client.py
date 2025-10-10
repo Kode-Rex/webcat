@@ -11,8 +11,6 @@ from typing import List, Literal
 
 import requests
 
-from models.api_search_result import APISearchResult
-
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +19,7 @@ def fetch_perplexity_deep_research(
     api_key: str,
     max_results: int = 5,
     research_effort: Literal["low", "medium", "high"] = "high",
-) -> List[APISearchResult]:
+) -> tuple[str, List[str]]:
     """
     Fetch deep research results from Perplexity AI.
 
@@ -37,7 +35,9 @@ def fetch_perplexity_deep_research(
                         or "high" (deepest research). Only applies to sonar-deep-research.
 
     Returns:
-        List of APISearchResult objects containing research findings
+        Tuple of (research_report: str, citations: List[str])
+        - research_report: Full synthesized research content in markdown
+        - citations: List of citation URLs used in the research
     """
     url = "https://api.perplexity.ai/chat/completions"
     headers = {
@@ -73,47 +73,28 @@ def fetch_perplexity_deep_research(
         response.raise_for_status()
         data = response.json()
 
-        results: List[APISearchResult] = []
-
         # Extract the main research content
+        research_report = ""
+        citation_urls: List[str] = []
+
         if "choices" in data and len(data["choices"]) > 0:
             choice = data["choices"][0]
             message = choice.get("message", {})
-            content = message.get("content", "")
+            research_report = message.get("content", "")
 
-            # Extract citations if available
+            # Extract citation URLs
             citations = data.get("citations", [])
+            citation_urls = [
+                citation.get("url", "") for citation in citations if citation.get("url")
+            ][:max_results]
 
-            if citations:
-                # Create results from citations
-                for i, citation in enumerate(citations[:max_results]):
-                    results.append(
-                        APISearchResult(
-                            title=citation.get("title", f"Research Finding {i+1}"),
-                            link=citation.get("url", ""),
-                            snippet=citation.get(
-                                "snippet", content[:500] if i == 0 else ""
-                            ),
-                        )
-                    )
-            else:
-                # If no citations, create a single result with the full research
-                results.append(
-                    APISearchResult(
-                        title=f"Deep Research: {query[:100]}",
-                        link="",  # Will be handled by content scraping
-                        snippet=(
-                            content[:1000] if content else "Deep research completed."
-                        ),
-                    )
-                )
-
+            token_count = data.get("usage", {}).get("total_tokens", "N/A")
             logger.info(
-                f"Perplexity deep research returned {len(results)} results "
-                f"(tokens: {data.get('usage', {}).get('total_tokens', 'N/A')})"
+                f"Perplexity deep research completed: {len(research_report)} chars, "
+                f"{len(citation_urls)} citations, {token_count} tokens"
             )
 
-        return results
+        return research_report, citation_urls
 
     except requests.exceptions.HTTPError as e:
         logger.error(f"Perplexity API HTTP error: {e.response.status_code} - {e}")
@@ -121,7 +102,7 @@ def fetch_perplexity_deep_research(
             logger.error("Invalid Perplexity API key")
         elif e.response.status_code == 429:
             logger.error("Perplexity API rate limit exceeded")
-        return []
+        return "", []
     except Exception as e:
         logger.error(f"Error fetching Perplexity deep research: {str(e)}")
-        return []
+        return "", []

@@ -11,7 +11,7 @@ from typing import Literal
 
 from clients.perplexity_client import fetch_perplexity_deep_research
 from models.search_response import SearchResponse
-from services.search_processor import process_search_results
+from models.search_result import SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -61,16 +61,16 @@ async def deep_research_tool(
         )
         return response.model_dump()
 
-    # Fetch deep research results from Perplexity
-    api_results = fetch_perplexity_deep_research(
+    # Fetch deep research from Perplexity
+    research_report, citation_urls = fetch_perplexity_deep_research(
         query=query,
         api_key=PERPLEXITY_API_KEY,
         max_results=max_results,
         research_effort=research_effort,
     )
 
-    # Check if we got any results
-    if not api_results:
+    # Check if we got research content
+    if not research_report:
         logger.warning(f"No deep research results found for query: {query}")
         response = SearchResponse(
             query=query,
@@ -83,15 +83,40 @@ async def deep_research_tool(
         )
         return response.model_dump()
 
-    # Process the results (scrape and convert to markdown)
-    processed_results = process_search_results(api_results)
+    # Format the research report with title and citations
+    formatted_content = f"# Deep Research: {query}\n\n"
+    formatted_content += f"*Research Effort: {research_effort.title()}*\n\n"
+    formatted_content += "---\n\n"
+    formatted_content += research_report
+    formatted_content += "\n\n---\n\n"
+
+    # Add citations section
+    if citation_urls:
+        formatted_content += "## Sources\n\n"
+        for i, url in enumerate(citation_urls, 1):
+            formatted_content += f"{i}. {url}\n"
+
+    # Create a single SearchResult with the full research report
+    research_result = SearchResult(
+        title=f"Deep Research: {query}",
+        url="",  # No URL since this is synthesized research
+        snippet=(
+            research_report[:500] + "..."
+            if len(research_report) > 500
+            else research_report
+        ),
+        content=formatted_content,
+    )
 
     # Build typed response
     response = SearchResponse(
         query=query,
         search_source=f"Perplexity Deep Research (effort: {research_effort})",
-        results=processed_results,
+        results=[research_result],
     )
 
-    logger.info(f"Deep research completed: {len(processed_results)} sources analyzed")
+    logger.info(
+        f"Deep research completed: {len(research_report)} chars, "
+        f"{len(citation_urls)} sources cited"
+    )
     return response.model_dump()
