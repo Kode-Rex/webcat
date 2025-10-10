@@ -34,6 +34,7 @@ dependencies = [
     "fastmcp>=2.7.0",
     "duckduckgo-search>=3.9.0",
     "trafilatura>=1.6.0",
+    "perplexityai>=0.15.0",
 ]
 
 [project.optional-dependencies]
@@ -149,6 +150,7 @@ module = [
     "fastmcp.*",
     "sse_starlette.*",
     "trafilatura.*",
+    "perplexity.*",
 ]
 ignore_missing_imports = true
 

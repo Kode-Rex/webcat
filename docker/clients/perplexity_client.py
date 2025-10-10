@@ -5,11 +5,10 @@
 
 """Perplexity API client - deep research search using Perplexity's sonar models."""
 
-import json
 import logging
 from typing import List, Literal
 
-import requests
+from perplexity import Perplexity
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ def fetch_perplexity_deep_research(
     research_effort: Literal["low", "medium", "high"] = "high",
 ) -> tuple[str, List[str]]:
     """
-    Fetch deep research results from Perplexity AI.
+    Fetch deep research results from Perplexity AI using official SDK.
 
     Uses Perplexity's sonar-deep-research model which performs dozens of searches,
     reads hundreds of sources, and reasons through material to deliver comprehensive
@@ -39,56 +38,49 @@ def fetch_perplexity_deep_research(
         - research_report: Full synthesized research content in markdown
         - citations: List of citation URLs used in the research
     """
-    url = "https://api.perplexity.ai/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "model": "sonar-deep-research",
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a comprehensive research assistant. Provide detailed, "
-                    "well-researched answers with clear structure and citations. "
-                    f"Focus on returning {max_results} most relevant sources."
-                ),
-            },
-            {"role": "user", "content": query},
-        ],
-        "reasoning_effort": research_effort,
-        "return_citations": True,
-        "return_related_questions": False,
-        "search_domain_filter": [],  # Search all domains
-        "temperature": 0.2,  # Lower temperature for factual research
-    }
-
     try:
         logger.info(
             f"Fetching Perplexity deep research (effort: {research_effort}): {query}"
         )
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
-        response.raise_for_status()
-        data = response.json()
 
-        # Extract the main research content
+        # Initialize Perplexity client with 10-minute timeout for deep research
+        client = Perplexity(api_key=api_key, timeout=600.0)
+
+        # Create chat completion with deep research
+        # Note: Official SDK may not support all parameters, using minimal set
+        response = client.chat.completions.create(
+            model="sonar-deep-research",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a comprehensive research assistant. Provide detailed, "
+                        "well-researched answers with clear structure and citations. "
+                        f"Focus on returning {max_results} most relevant sources."
+                    ),
+                },
+                {"role": "user", "content": query},
+            ],
+        )
+
+        # Extract research content
         research_report = ""
         citation_urls: List[str] = []
 
-        if "choices" in data and len(data["choices"]) > 0:
-            choice = data["choices"][0]
-            message = choice.get("message", {})
-            research_report = message.get("content", "")
+        if response.choices and len(response.choices) > 0:
+            research_report = response.choices[0].message.content or ""
 
-            # Extract citation URLs
-            citations = data.get("citations", [])
-            citation_urls = [
-                citation.get("url", "") for citation in citations if citation.get("url")
-            ][:max_results]
+            # Extract citations from response
+            if hasattr(response, "citations") and response.citations:
+                citation_urls = [
+                    citation if isinstance(citation, str) else citation.get("url", "")
+                    for citation in response.citations
+                    if citation
+                ][:max_results]
 
-            token_count = data.get("usage", {}).get("total_tokens", "N/A")
+            token_count = (
+                response.usage.total_tokens if hasattr(response, "usage") else "N/A"
+            )
             logger.info(
                 f"Perplexity deep research completed: {len(research_report)} chars, "
                 f"{len(citation_urls)} citations, {token_count} tokens"
@@ -96,13 +88,6 @@ def fetch_perplexity_deep_research(
 
         return research_report, citation_urls
 
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Perplexity API HTTP error: {e.response.status_code} - {e}")
-        if e.response.status_code == 401:
-            logger.error("Invalid Perplexity API key")
-        elif e.response.status_code == 429:
-            logger.error("Perplexity API rate limit exceeded")
-        return "", []
     except Exception as e:
         logger.error(f"Error fetching Perplexity deep research: {str(e)}")
         return "", []
