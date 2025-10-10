@@ -10,7 +10,6 @@ import logging
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from endpoints.demo_client import serve_demo_client
 from models.health_responses import (
     get_detailed_status,
     get_health_status,
@@ -33,11 +32,6 @@ def setup_health_endpoints(app: FastAPI):
         except Exception as e:
             logger.error(f"Health check failed: {str(e)}")
             return JSONResponse(status_code=500, content=get_unhealthy_status(str(e)))
-
-    @app.get("/demo")
-    async def sse_client():
-        """Serve the WebCat SSE demo client."""
-        return serve_demo_client()
 
     @app.get("/status")
     async def server_status():

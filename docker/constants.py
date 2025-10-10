@@ -6,7 +6,7 @@
 """Constants for WebCat application."""
 
 # Application version
-VERSION = "2.3.0"
+VERSION = "2.3.1"
 
 # Service information
 SERVICE_NAME = "WebCat MCP Server"
@@ -19,8 +19,6 @@ CAPABILITIES = [
     "Content extraction and scraping",
     "Markdown conversion",
     "FastMCP protocol support",
-    "SSE streaming",
-    "Demo UI client",
 ]
 
 # Content limits
