@@ -105,6 +105,7 @@ make mcp        # Start MCP server
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional, falls back to DuckDuckGo if not set) |
+| `PERPLEXITY_API_KEY` | *(none)* | Perplexity API key for deep research tool (optional, get at https://www.perplexity.ai/settings/api) |
 | `WEBCAT_API_KEY` | *(none)* | Bearer token for authentication (optional, if set all requests must include `Authorization: Bearer <token>`) |
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |

@@ -53,13 +53,18 @@ load_dotenv()
 logger = setup_logging("webcat.log")
 
 # Import tools AFTER loading .env so they can access environment variables
+from tools.deep_research_tool import deep_research_tool  # noqa: E402
 from tools.health_check_tool import health_check_tool  # noqa: E402
 from tools.search_tool import search_tool  # noqa: E402
 
 # Log configuration status
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
+PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 logging.info(
     f"SERPER API key: {'Set' if SERPER_API_KEY else 'Not set (using DuckDuckGo fallback)'}"
+)
+logging.info(
+    f"PERPLEXITY API key: {'Set' if PERPLEXITY_API_KEY else 'Not set (deep_research tool unavailable)'}"
 )
 
 
@@ -71,6 +76,16 @@ mcp_server.tool(
     name="search",
     description="Search the web for information using Serper API or DuckDuckGo fallback",
 )(search_tool)
+
+mcp_server.tool(
+    name="deep_research",
+    description=(
+        "Perform comprehensive deep research on a topic using Perplexity AI. "
+        "This tool performs dozens of searches, reads hundreds of sources, and "
+        "synthesizes findings into a comprehensive report. Ideal for in-depth "
+        "analysis and multi-source research. Takes 2-4 minutes to complete."
+    ),
+)(deep_research_tool)
 
 mcp_server.tool(name="health_check", description="Check the health of the server")(
     health_check_tool
