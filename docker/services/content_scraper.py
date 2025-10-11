@@ -12,6 +12,7 @@ import requests
 import trafilatura
 
 from clients.serper_client import scrape_webpage as serper_scrape_webpage
+from clients.tavily_client import extract_content as tavily_extract_content
 from constants import MAX_CONTENT_LENGTH, REQUEST_TIMEOUT_SECONDS
 from models.search_result import SearchResult
 
@@ -87,8 +88,10 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
     """
     Scrapes the content of a search result URL and converts it to markdown.
 
-    Uses Serper's scrape API if SERPER_API_KEY is available (faster, more reliable).
-    Falls back to Trafilatura for local scraping if Serper is not configured.
+    Fallback chain:
+    1. Serper scrape API (if SERPER_API_KEY available)
+    2. Tavily extract API (if TAVILY_API_KEY available)
+    3. Trafilatura (local scraping, always available)
 
     Args:
         result: SearchResult object with URL to scrape
@@ -119,11 +122,37 @@ def scrape_search_result(result: SearchResult) -> SearchResult:
                 return result
 
             logger.warning(
-                f"Serper scrape returned no content for {result.url}, falling back to Trafilatura"
+                f"Serper scrape returned no content for {result.url}, trying Tavily"
             )
         except Exception as e:
             logger.warning(
-                f"Serper scrape failed for {result.url}: {str(e)}, falling back to Trafilatura"
+                f"Serper scrape failed for {result.url}: {str(e)}, trying Tavily"
+            )
+
+    # Try Tavily extract if API key is available
+    tavily_api_key = os.environ.get("TAVILY_API_KEY", "")
+    if tavily_api_key:
+        try:
+            logger.info(f"Using Tavily extract API for {result.url}")
+            scraped_content = tavily_extract_content(result.url, tavily_api_key)
+
+            if scraped_content:
+                # Format with title and source
+                full_content = (
+                    f"# {result.title}\n\n*Source: {result.url}*\n\n{scraped_content}"
+                )
+                result.content = _truncate_if_needed(full_content)
+                logger.info(
+                    f"Successfully scraped via Tavily: {len(result.content)} chars"
+                )
+                return result
+
+            logger.warning(
+                f"Tavily extract returned no content for {result.url}, falling back to Trafilatura"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Tavily extract failed for {result.url}: {str(e)}, falling back to Trafilatura"
             )
 
     # Fallback to Trafilatura scraping

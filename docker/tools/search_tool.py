@@ -16,15 +16,21 @@ from services.search_service import fetch_with_fallback
 
 logger = logging.getLogger(__name__)
 
-# Get API key from environment
+# Get API keys from environment
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
 
 async def search_tool(query: str, max_results: int = 5) -> dict:
     """Search the web for information on a given query.
 
-    This MCP tool searches the web using Serper API (premium) or DuckDuckGo
-    (free fallback). It automatically scrapes and converts content to markdown.
+    This MCP tool searches the web using Serper API, Tavily API, or DuckDuckGo
+    with automatic fallback. It automatically scrapes and converts content to markdown.
+
+    Fallback order:
+    1. Serper API (if SERPER_API_KEY configured)
+    2. Tavily API (if TAVILY_API_KEY configured)
+    3. DuckDuckGo (free, always available)
 
     Args:
         query: The search query string
@@ -36,7 +42,9 @@ async def search_tool(query: str, max_results: int = 5) -> dict:
     logger.info(f"Processing search request: {query} (max {max_results} results)")
 
     # Fetch results with automatic fallback
-    api_results, search_source = fetch_with_fallback(query, SERPER_API_KEY, max_results)
+    api_results, search_source = fetch_with_fallback(
+        query, SERPER_API_KEY, TAVILY_API_KEY, max_results
+    )
 
     # Check if we got any results
     if not api_results:

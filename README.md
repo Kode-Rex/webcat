@@ -39,20 +39,20 @@ python mcp_server.py
 ## What is WebCat?
 
 WebCat is an **MCP (Model Context Protocol) server** that provides AI models with:
-- 🔍 **Web Search** - Serper API (premium) or DuckDuckGo (free fallback)
-- 📄 **Content Extraction** - Serper scrape API (premium) or Trafilatura (free fallback)
+- 🔍 **Web Search** - Serper, Tavily, or DuckDuckGo with automatic fallback
+- 📄 **Content Extraction** - Serper scrape, Tavily extract, or Trafilatura fallback
 - 🌐 **Modern HTTP Transport** - Streamable HTTP with JSON-RPC 2.0
 - 🐳 **Multi-Platform Docker** - Works on Intel, ARM, and Apple Silicon
-- 🎯 **Composite Tool** - Single SERPER_API_KEY enables both search + scraping
+- 🎯 **Flexible APIs** - Use Serper, Tavily, or free alternatives
 
-Built with **FastMCP**, **Serper.dev**, and **Trafilatura** for seamless AI integration.
+Built with **FastMCP**, **Serper.dev**, **Tavily**, and **Trafilatura** for seamless AI integration.
 
 ## Features
 
-- ✅ **Optional Authentication** - Bearer token auth when needed, or run without (v2.3.1)
-- ✅ **Composite Search Tool** - Single Serper API key enables both search + scraping
-- ✅ **Automatic Fallback** - Search: Serper → DuckDuckGo | Scraping: Serper → Trafilatura
-- ✅ **Premium Scraping** - Serper's optimized infrastructure for fast, clean content extraction
+- ✅ **Optional Authentication** - Bearer token auth when needed, or run without
+- ✅ **Multiple Search APIs** - Serper (Google-powered), Tavily (AI-optimized), or DuckDuckGo (free)
+- ✅ **Automatic Fallback** - Search: Serper → Tavily → DuckDuckGo | Scraping: Serper → Tavily → Trafilatura
+- ✅ **Premium Scraping** - Serper & Tavily's optimized infrastructure for fast, clean content
 - ✅ **Smart Content Extraction** - Returns markdown with preserved document structure
 - ✅ **MCP Compliant** - Works with Claude Desktop, LiteLLM, and other MCP clients
 - ✅ **Parallel Processing** - Fast concurrent scraping
@@ -107,9 +107,10 @@ make mcp        # Start MCP server
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SERPER_API_KEY` | *(none)* | Serper API key for premium search (optional, falls back to DuckDuckGo if not set) |
-| `PERPLEXITY_API_KEY` | *(none)* | Perplexity API key for deep research tool (optional, get at https://www.perplexity.ai/settings/api) |
-| `WEBCAT_API_KEY` | *(none)* | Bearer token for authentication (optional, if set all requests must include `Authorization: Bearer <token>`) |
+| `SERPER_API_KEY` | *(none)* | Serper API key for Google-powered search + scraping (optional) |
+| `TAVILY_API_KEY` | *(none)* | Tavily API key for AI-optimized search + extraction (optional) |
+| `PERPLEXITY_API_KEY` | *(none)* | Perplexity API key for deep research tool (optional) |
+| `WEBCAT_API_KEY` | *(none)* | Bearer token for authentication (optional) |
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `LOG_DIR` | `/tmp` | Log file directory |
@@ -117,12 +118,17 @@ make mcp        # Start MCP server
 
 ### Get API Keys
 
-**Serper API (for web search + scraping):**
+**Serper API (Google-powered search + scraping):**
 1. Visit [serper.dev](https://serper.dev)
 2. Sign up for free tier (2,500 searches/month + scraping)
 3. Copy your API key
 4. Add to `.env` file: `SERPER_API_KEY=your_key`
-5. **Note:** One API key enables both search AND content scraping!
+
+**Tavily API (AI-optimized search + extraction):**
+1. Visit [tavily.com](https://tavily.com)
+2. Sign up for free tier
+3. Copy your API key
+4. Add to `.env` file: `TAVILY_API_KEY=your_key`
 
 **Perplexity API (for deep research):**
 1. Visit [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api)
@@ -161,17 +167,19 @@ FastMCP Server (Streamable HTTP with JSON-RPC 2.0)
 Authentication (optional bearer token)
     ↓
 Search Decision
-    ├─ Serper API (premium) → Serper Scrape API (premium)
-    └─ DuckDuckGo (free)    → Trafilatura (free)
-                                    ↓
-                            Markdown Response
+    ├─ Serper API (Google-powered) → Serper Scrape API
+    ├─ Tavily API (AI-optimized)  → Tavily Extract API
+    └─ DuckDuckGo (free)           → Trafilatura (free)
+                                            ↓
+                                    Markdown Response
 ```
 
 **Tech Stack:**
 - **FastMCP** - MCP protocol implementation with modern HTTP transport
 - **JSON-RPC 2.0** - Standard protocol for client-server communication
-- **Serper API** - Google-powered search + optimized web scraping
-- **Trafilatura** - Fallback content extraction (removes navigation/ads)
+- **Serper API** - Google-powered search + optimized scraping
+- **Tavily API** - AI-optimized search + content extraction
+- **Trafilatura** - Local content extraction fallback
 - **DuckDuckGo** - Free search fallback
 
 ## Testing
@@ -234,10 +242,11 @@ docker/
 ├── api_tools.py           # API tooling utilities
 ├── clients/               # External API clients
 │   ├── serper_client.py  # Serper API (search + scrape)
+│   ├── tavily_client.py  # Tavily API (search + extract)
 │   └── duckduckgo_client.py  # DuckDuckGo fallback
 ├── services/              # Core business logic
 │   ├── search_service.py # Search orchestration
-│   └── content_scraper.py # Serper scrape → Trafilatura fallback
+│   └── content_scraper.py # Serper → Tavily → Trafilatura fallback
 ├── tools/                 # MCP tool implementations
 │   └── search_tool.py    # Search tool with auth
 ├── models/                # Pydantic data models
@@ -252,15 +261,16 @@ docker/
 └── pyproject.toml         # Project config + dependencies
 ```
 
-## Search Quality Comparison
+## Search API Comparison
 
-| Feature | Serper API | DuckDuckGo |
-|---------|------------|------------|
-| **Cost** | Paid (free tier available) | Free |
-| **Quality** | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐ Good |
-| **Coverage** | Comprehensive (Google-powered) | Standard |
-| **Speed** | Fast | Fast |
-| **Rate Limits** | 2,500/month (free tier) | None |
+| Feature | Serper API | Tavily API | DuckDuckGo |
+|---------|------------|------------|------------|
+| **Cost** | Paid (free tier) | Paid (free tier) | Free |
+| **Quality** | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐ Good |
+| **Source** | Google-powered | AI-optimized | Standard |
+| **Scraping** | Built-in scrape API | Built-in extract API | None (uses Trafilatura) |
+| **Speed** | Very Fast | Very Fast | Fast |
+| **Rate Limits** | 2,500/month (free) | Varies (free tier) | None |
 
 ## Docker Multi-Platform Support
 

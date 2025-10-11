@@ -35,6 +35,7 @@ dependencies = [
     "duckduckgo-search>=3.9.0",
     "trafilatura>=1.6.0",
     "perplexityai>=0.15.0",
+    "tavily-python>=0.3.0",
 ]
 
 [project.optional-dependencies]
@@ -151,6 +152,7 @@ module = [
     "sse_starlette.*",
     "trafilatura.*",
     "perplexity.*",
+    "tavily.*",
 ]
 ignore_missing_imports = true
 
